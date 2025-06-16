@@ -1,0 +1,90 @@
+<% 
+
+const typeedMusic = musicList.reduce((types, song) => {
+  if (!types[song.type]) types[song.type] = [];
+  types[song.type].push(song);
+  return types;
+}, {});
+%>
+
+<html class="home">
+<head>
+  <%- include("includes/head") %>
+</head>
+<body>
+  <header>
+    <%- include("includes/header", { header: "music" }) %>
+  </header>
+
+  <main class="main">
+    <div style="margin: 12px;">
+      <% Object.keys(typeedMusic).forEach(type => { %>
+        <h1 style="text-align: center; margin-top: 2.5rem;"><%= type %></h1>
+        <br>
+        <% typeedMusic[type].forEach((song, index) => { %>
+          <div class="music-track" data-src="/audio/<%= song.link %>" onclick="playTrack(this, <%= index %>)">
+            <div class="track-info">
+              <strong><%= song.title %></strong> – <%= song.ensemble %>
+            </div>
+            <div class="waveform">
+              <% for (let i = 0; i < 20; i++) { %>
+                <div class="bar" data-bar></div>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% }) %>
+    </div>
+    <br><br><br><br>
+  </main>
+
+  <div id="music-player">
+    <audio id="audio-player" src="" preload="metadata" controls></audio>
+  </div>
+
+  <footer>
+    <%- include("includes/footer") %>
+  </footer>
+
+  <script>
+    const audio = document.getElementById("audio-player");
+    let currentTrack = null;
+    let barAnimationInterval = null;
+
+    function playTrack(el, index) {
+      const src = el.getAttribute("data-src");
+
+      if (audio.src.endsWith(src) && !audio.paused) {
+        audio.pause();
+        stopWave();
+        return;
+      }
+
+      document.querySelectorAll(".music-track .bar").forEach(bar => bar.classList.remove("active"));
+
+      audio.src = src;
+      audio.play();
+      currentTrack = el;
+      animateBars(el.querySelectorAll("[data-bar]"));
+    }
+
+    function animateBars(bars) {
+      stopWave();
+      barAnimationInterval = setInterval(() => {
+        bars.forEach(bar => {
+          const isActive = Math.random() > 0.5;
+          bar.classList.toggle("active", isActive);
+        });
+      }, 200);
+    }
+
+    function stopWave() {
+      clearInterval(barAnimationInterval);
+      barAnimationInterval = null;
+      document.querySelectorAll(".music-track .bar").forEach(bar => bar.classList.remove("active"));
+    }
+
+    audio.addEventListener("ended", () => stopWave());
+  </script>
+</body>
+</html>

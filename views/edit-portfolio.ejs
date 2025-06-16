@@ -1,0 +1,35 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">Edit Portfolio</h1>
+        <br>
+        <div style="text-align: center;">
+            <a href="/add-music"><button>Add New Piece</button></a>
+        </div>
+        <br>
+        <% if(portfolio.length > 0) { %>
+            <% portfolio.forEach(item => { %>
+                <div class="card" style="display: grid; grid-template-columns: 2fr 1fr;">
+                    <div>
+                        <h2><%= item.title %></h2>
+                        <p><%= item.ensemble %> | <%= item.type %></p>
+                    </div>
+                    <div style="text-align: center;">
+                        <a href="/delete-piece/<%= item.id %>"><button>DELETE</button></a>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

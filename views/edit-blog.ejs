@@ -1,0 +1,35 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">Edit Blog</h1>
+        <br>
+        <div style="text-align: center;">
+            <a href="/add-blog"><button>Add New Blog</button></a>
+        </div>
+        <br>
+        <% if(blogs.length > 0) { %>
+            <% blogs.forEach(blog => { %>
+                <div class="card" style="display: grid; grid-template-columns: 3fr 1fr;">
+                    <div>
+                        <h2><%= blog.title %></h2>
+                        <small><%= new Date(blog.created_at).toISOString().slice(0, 10) %></small>
+                    </div>
+                    <div style="text-align: center;">
+                        <a href="/edit-blog/<%= blog.id %>"><button>Edit Blog</button></a>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

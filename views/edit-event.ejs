@@ -1,0 +1,59 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+    <main class="main">
+        <form method="POST" action="/edit-event/<%= event.id %>" enctype="multipart/form-data">
+            <br>
+            <h2>Edit Event</h2>
+
+            <% if(event.image) { %>
+              <div style="text-align:center; margin-bottom: 1rem;">
+                <img src="/img/<%= event.image %>" alt="<%= event.title %> image" style="max-width: 100%; max-height: 300px; border-radius: 10px; object-fit: cover;">
+              </div>
+            <% } %>
+
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" value="<%= event.title %>" required>
+
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="5" required><%= event.description %></textarea>
+
+            <label for="datetime">Date & Time</label>
+            <% 
+              // Format datetime-local input value: YYYY-MM-DDTHH:mm
+              const dt = new Date(event.datetime);
+              const yyyy = dt.getFullYear();
+              const mm = String(dt.getMonth() + 1).padStart(2, '0');
+              const dd = String(dt.getDate()).padStart(2, '0');
+              const hh = String(dt.getHours()).padStart(2, '0');
+              const min = String(dt.getMinutes()).padStart(2, '0');
+              const datetimeLocal = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+            %>
+            <input type="datetime-local" id="datetime" name="datetime" value="<%= datetimeLocal %>" required>
+
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" value="<%= event.location %>" required>
+
+            <label for="image">Change Event Image</label>
+            <input type="file" id="image" name="image" accept="image/*">
+
+            <label for="link">External Link</label>
+            <input type="url" id="link" name="link" placeholder="https://" value="<%= event.link || '' %>">
+
+            <button type="submit">Update Event</button>
+        </form>
+        <br><br>
+        <div style="text-align: center;">
+          <a href="/delete-event/<%= event.id %>"><button>Remove Event</button></a>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

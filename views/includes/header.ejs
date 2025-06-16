@@ -1,0 +1,49 @@
+<div class="main-header">
+    <% if(user) { %>
+        <div style="text-align: center;">
+            Admin tools:
+            <a href="/logout">Logout</a>
+            <a href="/edit-events">Events</a>
+            <a href="/edit-portfolio">Portfolio</a>
+            <a href="/edit-blog">Blog</a>
+            <a href="/edit-programming">Programming</a>
+        </div>
+        <br>
+    <% } %>
+    <div style="text-align: center;">
+        <a href="/">
+            <img src="/img/chris.jpg" alt="Chris Price at his piano" style="width: 196px; height: 196px; border-radius: 50%; border: solid 3px #fff;">
+        </a>
+    </div>
+    <h1 style="text-align: center;"><i>Chris Price</i></h1>
+    <p style="text-align: center;">Composer • Arranger • Programmer</p>
+    <div style="text-align: center; padding-top: 16px; font-size: x-large;">
+        <a href="/youtube"><ion-icon name="logo-youtube"></ion-icon></a>
+        <a href="https://www.linkedin.com/in/ceprice/" target="_blank"><ion-icon name="logo-linkedin"></ion-icon></a>
+        <a href="https://www.instagram.com/chris.price.music/" target="_blank"><ion-icon name="logo-instagram"></ion-icon></a>
+        <a href="https://www.tiktok.com/@chrispricemusic_?lang=en" target="_blank"><ion-icon name="logo-tiktok"></ion-icon></a>
+        <a href="https://www.reddit.com/user/ChrisPriceMusic/" target="_blank"><ion-icon name="logo-reddit"></ion-icon></a>
+        <a href="https://www.facebook.com/chrispricecomposer" target="_blank"><ion-icon name="logo-facebook"></ion-icon></a>
+        <a href="/contact"><ion-icon name="mail-outline"></ion-icon></a>
+    </div>
+    <% if(typeof header !== "undefined") { %>
+        <% if(header == "music") { %>
+            <div style="text-align: center;">
+                <a href="/music">Music</a>
+                <a href="https://chrispricemusic.net" target="_blank">Publishing</a>
+                <a href="/portfolio">Portfolio</a>
+                <a href="/lessons">Lessons</a>
+                <a href="/commission">Commission</a>
+                <a href="/events">Events</a>
+                <a href="/blog">Blog</a>
+            </div>
+        <% } else { %>
+            <div style="text-align: center;">
+                <a href="/programming">Programming</a>
+                <a href="/programming-portfolio">Portfolio</a>
+                <a href="/hire-me">Hire-Me</a>
+                <a href="/blog">Blog</a>
+            </div>
+        <% } %>
+    <% } %>
+</div>

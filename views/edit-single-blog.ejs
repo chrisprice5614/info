@@ -1,0 +1,107 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">
+            Edit Blog Post
+        </h1>
+        <br>
+        <form method="POST" action="/edit-blog/<%= blog.id %>" enctype="multipart/form-data">
+            <label for="title">Title</label>
+            <input 
+              type="text" 
+              id="title" 
+              name="title" 
+              placeholder="Enter blog title..." 
+              required
+              value="<%= blog.title.replace(/"/g, '&quot;') %>"
+            >
+
+            <label for="markdown">Content</label>
+            <textarea 
+              id="markdown" 
+              name="content" 
+              placeholder="Write Markdown here..." 
+              required
+              rows="10"
+            ><%= blog.content %></textarea>
+
+            <!-- Image Upload UI -->
+            <label for="imageUpload">Insert Image</label>
+            <input type="file" id="imageUpload" accept="image/*">
+            <button type="button" onclick="uploadImage()">Upload & Insert</button>
+
+            <br><br>
+
+            <button type="submit">Save Blog Post</button>
+
+            <br><br>
+
+            <div class="preview" id="preview"></div>
+        </form>
+        <br>
+        <br>
+        <div style="text-align: center;">
+            <a href="/delete-blog/<%= blog.id %>"><button>Delete Blog</button></a>
+        </div>
+        <br>
+        <br>
+
+        <script>
+            const textarea = document.getElementById("markdown");
+            const preview = document.getElementById("preview");
+
+            textarea.addEventListener("input", () => {
+                const markdownText = textarea.value;
+                preview.innerHTML = marked.parse(markdownText);
+            });
+
+            // Initialize preview on page load
+            preview.innerHTML = marked.parse(textarea.value);
+
+            async function uploadImage() {
+                const fileInput = document.getElementById("imageUpload");
+                const file = fileInput.files[0];
+
+                if (!file) return alert("Please select an image");
+
+                const formData = new FormData();
+                formData.append("image", file);
+
+                try {
+                    const res = await fetch("/upload-image", {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error);
+
+                    // Insert Markdown image syntax into textarea
+                    const markdownInput = document.getElementById("markdown");
+                    const cursor = markdownInput.selectionStart;
+                    const markdownImage = `![Alt text](${data.url})`;
+                    const text = markdownInput.value;
+                    markdownInput.value =
+                        text.substring(0, cursor) + markdownImage + text.substring(cursor);
+
+                    // Update preview after inserting image markdown
+                    preview.innerHTML = marked.parse(markdownInput.value);
+                } catch (err) {
+                    alert("Upload failed: " + err.message);
+                }
+            }
+        </script>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

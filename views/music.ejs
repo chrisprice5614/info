@@ -1,0 +1,154 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <style>
+    .card:hover {
+        box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+    <main class="main">
+        <div style="margin: 16px;">
+            <br>
+            <div style="
+            background-image: url('/img/chris-2.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 100px 20px;
+            text-align: center;
+            color: white;
+            text-shadow: 0px 0px 6px rgba(0,0,0,0.8);
+            ">
+            <h1>Chris Price</h1>
+            <br>
+            <p>Composer & Music Educator</p>
+            <br>
+            <a href="/portfolio"><button>View Portfolio</button></a>
+        </div>
+            
+            <br>
+            <p>Hi, I'm Chris Price — a composer, educator, and all-around music nerd based in Spokane, Washington. I earned my music degree from Whitworth University, and ever since, I’ve been diving deeper into everything from jazz theory to ensemble writing to weird experimental textures. I love learning, and I’ve never really stopped.</p>
+            <br>
+            <p>
+            My main instruments are piano and trombone, but I try to stay flexible — I’ve picked up a lot of others along the way. I’m heavily involved in my church community, and you can usually catch me playing with the Spokane Falls Community College Jazz Band and a few of its combos. Over the years I’ve played in musicals, at private events, and onstage at professional gigs across the region.
+            </p>
+            <br>
+            <div style="text-align: center;">
+                <a href="/commission"><button>Commission A New Piece</button></a>
+            </div>
+            <br>
+            <div class="long-img-wrapper">
+                <img src="/img/gems.jpg" alt="Boise Gems Drum and Bugle Corps.">
+                <div class="img-caption">Boise Gems Drum & Bugle Corps 2024</div>
+            </div>
+            <br>
+            <p>I’ve been lucky to write for ensembles across the country — one of the coolest partnerships has been with the Boise Gems Drum & Bugle Corps. Beyond writing, I also work hands-on with groups, helping with instrumental technique, visual performance, and student leadership. I love being part of the growth process.</p>
+            <br>
+            <h1>Publishing Website</h1>
+            <br>
+            <p>
+            Alongside composing, I’m also a programmer. I’ve built a publishing website where I showcase not just my own music, but works by other composers too. If you write music and want to reach performers, check out the site and see if it's a good fit. My goal with <strong>chrispricemusic.net</strong> is to make a platform where composers feel seen, and musicians can easily find exactly what they need.
+            </p>
+            <br>
+            <div style="text-align: center;">
+                <a href="https://chrispricemusic.net" target="_blank"><button>Publishing Website</button></a>
+            </div>
+            <br>
+            <% if(events.length > 0) { %>
+            <h1>Upcoming Events</h1>
+            <p>If you want to hear my music live, here's what's coming up!</p>
+            <br>
+            <% 
+                const show_old = false; // default true
+                const now = new Date();
+                const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+            %>
+
+                <% events.forEach(event => {
+                    const eventTime = new Date(event.datetime);
+                    const isOld = now - eventTime > FOUR_HOURS_MS;
+                    if (show_old || !isOld) { 
+                %>
+                <% 
+                    const eventDate = new Date(event.datetime);
+                    const optionsWeekday = { weekday: 'long' };
+                    const weekday = eventDate.toLocaleDateString('en-US', optionsWeekday);
+                    const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(eventDate.getDate()).padStart(2, '0');
+                    const yyyy = eventDate.getFullYear();
+
+                    let hours = eventDate.getHours();
+                    const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'pm' : 'am';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12; // 0 -> 12
+
+                    const formattedDateTime = `${weekday} • ${mm}/${dd}/${yyyy} • ${hours}:${minutes} ${ampm}`;
+                %>
+                    <div class="card" style="cursor: pointer;" onclick="window.location.href='/event/<%= event.slug %>'">
+                        <div style="display: grid; grid-template-columns: 3fr 1fr; column-gap: 8px;">
+                            <div>
+                                <h2><%= event.title %></h2>
+                                <p><%= event.description.substring(0, 40) %>...</p>
+                                <p style="color: rgb(195, 232, 241)"> <%= formattedDateTime %></p>
+                                <p style="color: rgb(195, 232, 241)"><strong>Location:</strong> <%= event.location %></p>
+                            </div>
+                            <div>
+                                <img src="/img/<%= event.image %>" alt="" style="width: 100%; height: 112px; object-fit: cover;">
+                            </div>
+                        </div>
+                    </div>
+                <%  } 
+                }) %>
+                <br>
+                <div style="text-align: center;">
+                    <a href="/events"><button>All Events</button></a>
+                </div>
+            <% } %>
+
+            <br>
+            <h1>Lessons</h1>
+            <br>
+            <p>I genuinely believe success isn't about winning — it's about motion. If you’re moving toward your goals, you’re already doing the most important part. I’ve been playing and writing music for over a decade, and I love sharing what I’ve learned. If you're interested in lessons — whether you're just starting out or want to go deeper — hit the button below to learn more.</p>
+            <br>
+            <div style="text-align: center;">
+                <a href="/lessons"><button>Lessons</button></a>
+            </div>
+            </p>
+            <br>
+            <h1>Blog</h1>
+            <br>
+            <p>I write about music, creativity, education, and whatever’s inspiring me at the moment. Sometimes it's deep dives into composition techniques, other times it's stories from the road or thoughts on music education. If you’re curious about how I think — or just want some behind-the-scenes — the blog is where it lives.<br><br>My programming blogs are mixed in there as well!</p>
+            <br>
+            <div style="text-align: center;">
+                <a href="/blog"><button>Read the Blog</button></a>
+            </div>
+            <br>
+            <h2>Recent Posts</h2>
+            <br>
+            <% if(blogs.length > 0) { %>
+                <% blogs.forEach(blog => { %>
+                    <div class="card" onclick="location.href='/blog/<%= blog.slug %>'">
+                        <div>
+                            <h2><%= blog.title %></h2>
+                            <small><%= new Date(blog.created_at).toLocaleDateString() %></small>
+                        </div>
+                        <div>
+                            <small>By <b><%= blog.author %></b></small>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+
+        </div>
+        
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

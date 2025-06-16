@@ -1,0 +1,43 @@
+<html class="home">
+<head>
+<title><%= project.title %> | Chris Price</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <%- include("includes/head") %>
+  <style>
+
+    .project-content {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <%- include("includes/header", { header: "programming" }) %>
+  </header>
+
+  <main class="main">
+    <div class="container" style="margin: 16px;">
+      <div style="position: relative; background: 
+        linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+        url('<%= project.hero %>') center/cover no-repeat; 
+        padding: 1rem;">
+        <h1 style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8); margin: 0; color: fff; text-align: center; font-size: 2rem; padding: 24px 0;">
+          <%= project.title %>
+        </h1>
+      </div>
+
+      
+
+      <div class="project-content">
+        <%- project.content %>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <%- include("includes/footer") %>
+  </footer>
+
+</body>
+</html>

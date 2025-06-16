@@ -1,0 +1,203 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <style>
+      .event-container {
+        max-width: 700px;
+        margin: 2rem auto 4rem auto;
+        padding: 1.5rem 2rem;
+        background-color: #1f1f2e;
+        color: #e0e0e0;
+        border-radius: 12px;
+        font-family: 'Gesta', sans-serif;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      }
+
+      .event-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .event-datetime {
+        font-weight: 600;
+        margin: 1rem 0 2rem 0;
+        font-size: 1.1rem;
+        color: #a08dab;
+      }
+
+      .event-description {
+        line-height: 1.5;
+        font-size: 1.15rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .event-link {
+        font-style: italic;
+        margin-bottom: 2rem;
+        color: #00ffccaa;
+      }
+
+      .event-location {
+        margin: 1.5rem 0 2rem 0;
+        font-size: 1.1rem;
+      }
+
+      .event-location a {
+        color: #00ffcc;
+        text-decoration: underline;
+      }
+
+      iframe {
+        border-radius: 10px;
+        margin-top: 0.8rem;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+      }
+
+      .btn-ical {
+        display: inline-block;
+        background: linear-gradient(-45deg, #43207c, #4a648b, #8048b4, #0d574d);
+        background-size: 400% 400%;
+        color: white;
+        padding: 0.8rem 1.8rem;
+        font-size: 1.1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: 'Gesta', sans-serif;
+        animation: gradientShift 15s ease infinite;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+        transition: box-shadow 0.3s ease;
+        text-decoration: none;
+        user-select: none;
+      }
+
+      .btn-ical:hover {
+        box-shadow: 0 10px 25px rgba(0,0,0,0.9);
+      }
+
+      @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+      }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+
+    <main style="background-color: transparent;">
+      <div class="event-container">
+
+        <h1><%= event.title %></h1>
+
+        <% if(event.image) { %>
+          <img src="/img/<%= event.image %>" alt="<%= event.title %> image" class="event-image">
+        <% } %>
+
+        <% 
+          const eventDate = new Date(event.datetime);
+          const optionsWeekday = { weekday: 'long' };
+          const weekday = eventDate.toLocaleDateString('en-US', optionsWeekday);
+          const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(eventDate.getDate()).padStart(2, '0');
+          const yyyy = eventDate.getFullYear();
+
+          // Format time in 12h with am/pm
+          let hours = eventDate.getHours();
+          const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+          const ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12; // 0 => 12
+
+          const formattedDate = `${mm}/${dd}/${yyyy}`;
+          const formattedTime = `${hours}:${minutes} ${ampm}`;
+        %>
+
+        <div class="event-datetime">
+          <strong>When:</strong> <%= weekday %>, <%= formattedDate %> at <%= formattedTime %>
+        </div>
+
+        <div class="event-description">
+          <%= event.description %>
+        </div>
+
+        <% if(event.link) { %>
+          <div class="event-link">
+            For more information, visit <a href="<%= event.link %>" target="_blank" rel="noopener noreferrer" style="color:#00ffcc;">this link</a>.
+          </div>
+        <% } %>
+
+        <% if(event.location) { %>
+          <div class="event-location">
+            <strong>Location:</strong> 
+            <a href="https://maps.google.com/?q=<%= encodeURIComponent(event.location) %>" target="_blank" rel="noopener noreferrer">
+              <%= event.location %>
+            </a>
+            <iframe 
+              width="100%" 
+              height="300px" 
+              src="https://maps.google.com/maps?width=100%&amp;height=600&amp;hl=en&amp;q=<%= encodeURIComponent(event.location) %>&amp;ie=UTF8&amp;t=&amp;z=12&amp;iwloc=B&amp;output=embed" 
+              frameborder="0" 
+              scrolling="no" 
+              marginheight="0" 
+              marginwidth="0"
+              allowfullscreen
+            ></iframe><br />
+          </div>
+        <% } %>
+
+        <% 
+          // Create iCal data string for the event
+          function formatDateICS(date) {
+            // Format as YYYYMMDDTHHmmssZ (UTC)
+            function pad(n) { return n < 10 ? '0' + n : n; }
+            const year = date.getUTCFullYear();
+            const month = pad(date.getUTCMonth() + 1);
+            const day = pad(date.getUTCDate());
+            const hours = pad(date.getUTCHours());
+            const mins = pad(date.getUTCMinutes());
+            const secs = pad(date.getUTCSeconds());
+            return `${year}${month}${day}T${hours}${mins}${secs}Z`;
+          }
+
+          const dtStart = formatDateICS(eventDate);
+          // Assuming 1-hour duration, adjust if you want
+          const dtEnd = formatDateICS(new Date(eventDate.getTime() + 60*60*1000));
+          const summary = event.title.replace(/,/g, '');
+          const description = event.description.replace(/,/g, '').replace(/\n/g, '\\n');
+          const location = event.location ? event.location.replace(/,/g, '') : '';
+          const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:${dtStart}
+DTEND:${dtEnd}
+SUMMARY:${summary}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+          const encodedIcs = encodeURIComponent(icsContent);
+          const icsHref = `data:text/calendar;charset=utf8,${encodedIcs}`;
+        %>
+
+        <a href="<%= icsHref %>" download="<%= summary.replace(/\s+/g, '_') %>.ics" class="btn-ical">Add to iCal</a>
+
+      </div>
+    </main>
+
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+    <main class="main">
+        <% if(typeof error !== "undefined") { %>
+            <br>
+            <h1 style="text-align: center; padding: 8px; border: solid 2px #F00; border-radius: 8px;"><%= error %></h1>
+            <br>
+        <% } %>
+        <br>
+        <h1 style="text-align: center;">Lessons</h1>
+        <br>
+        <div style="margin: 16px">
+            <p>Music theory, composition, and arrangement lessons are offered by Chris Price to continue your music journey. Each lesson is 1 on 1, either in person, or online. Each session is $35. A roadmap of your journey will be made based on where you are and where you want to be. You'll learn several important skills for being a musician, including how to write, how to format parts, how to create quiality renderings, and how to get your music performed.</p>
+        </div>
+        <br>
+        <form method="POST" action="/lessons">
+            <h2>Music Lesson Inquiry</h2>
+
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="First and Last Name" required>
+
+            <label for="country_state">Country/State</label>
+            <input type="text" id="country_state" name="country_state" placeholder="Washington" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="john@email.com" required>
+
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="(555) - 555 - 5555" required>
+
+            <label for="year">Year in School</label>
+            <input type="text" id="year" name="year" placeholder="College Freshman/Highschool Senior" required>
+
+            <label for="message">Tell us about your music journey</label>
+            <textarea id="message" name="message" rows="6" placeholder="Share your background, goals, and experience in music..." required></textarea>
+
+            <br>
+            <div class="g-recaptcha" data-sitekey="6Lchm2ErAAAAAGGXkJ9ane8BFngVnsa8tXF_PofO"></div>
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

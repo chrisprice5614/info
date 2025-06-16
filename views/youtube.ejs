@@ -1,0 +1,35 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <div style="text-align: center;">
+            <h1>Youtube Links</h1>
+            <br>
+
+            <% channels.forEach(channel => { %>
+                <div class="youtube-card" onclick="window.open('<%= channel.url %>', '_blank')">
+                    <div style="padding: 12px;">
+                        <img src="<%= channel.image %>" alt="<%= channel.title %>">
+                    </div>
+                    <div>
+                        <h2><%= channel.title %></h2>
+                        <p><%= channel.subs %> subscribers • <%= channel.videos %> videos</p>
+                    </div>
+                </div>
+                <br>
+                <br>
+            <% }); %>
+
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

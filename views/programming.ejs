@@ -1,0 +1,155 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <style>
+        .card {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", { header: "programming" }) %>
+    </header>
+    <main class="main">
+        <div style="margin: 16px;">
+            <br>
+            <div style="
+                background-image: url('/img/code.png');
+                background-size: cover;
+                background-position: center;
+                padding: 100px 20px;
+                text-align: center;
+                color: white;
+                text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            ">
+                <h1>Chris Price</h1>
+                <br>
+                <p>Programmer & Developer</p>
+                <br>
+                <a href="/programming-portfolio"><button>View Project Portfolio</button></a>
+            </div>
+
+            <br>
+            <p>Hey — I'm Chris Price. I'm a programmer and full-stack developer based in Spokane, Washington. I've built websites, games, mobile apps, and tools for both fun and function. I’m just as passionate about clean, thoughtful code as I am about solving real-world problems creatively.</p>
+            <br>
+            <p>Back in high school, I was lucky enough to win the 2018 Spokane Hackathon with Spokane Valley Tech, and I also received the Computer Science Award at my school. Since then, I’ve continued building, learning, and experimenting — and yes, I even built the very website you’re reading right now.</p>
+            <br>
+            <p>I'm always desinging and making things for my friends and I to do. Ever since I was in middle school, I'd programming multiplayer video games for my friends and I to play during lunch or recess. I learned at a very young age how networking programs are built. Even to this day, I make projects for my friends and I to mess around with. My video game, Friendmocracy, is my take on Jackbox Games, making a fun party game we can all play from our phones. When writing for the Boise Gems Drum & Bugle Corps in 2024, I was inspired by our western music sound to create a Western Arcade Shooter Game, The Game with No Name.</p>
+            <br>
+            <h1>What I Do</h1>
+            <br>
+            <p>I’ve built all kinds of things — from video games featured on my homepages to full publishing platforms. I work in web, mobile, and game development, and I’m comfortable across the stack. Whether it’s front-end design, back-end infrastructure, or stitching APIs together, I love making things that work and look good doing it.</p>
+            <br>
+            <p>I've built and continue to maintain several websites and software solutions for businesses in the Spokane area. These websites feature strong SEO, e-commerce functionality, and analytic tracking so business owners can monitor their web traffic effectively.</p>
+
+            <br>
+            <h2>Languages & Tools</h2>
+            <ul style="margin-left: 8px">
+                <li>JavaScript (Node, Express, React, etc.)</li>
+                <li>HTML/CSS, EJS, Bootstrap</li>
+                <li>SQL, SQLite, MongoDB</li>
+                <li>Unreal Engine (C++), GameMaker</li>
+                <li>GitHub, DreamCompute, AWS</li>
+            </ul>
+            <br>
+
+            <h2>Like what you see?</h2>
+            <br>
+            <p>If you like the projects I've made and want your website to be developed by me, click the button to fill out a contact form! I'm always looking for more projects to create!</p>
+            <br>
+
+            <div style="text-align: center;">
+                <a href="/contact-hire"><button>Hire Me</button></a>
+            </div>
+
+            <h2>Portfolio</h2>
+            <p>Here’s where I showcase some of the projects I’ve built</p>
+            <br>
+
+            <% if (projects.length > 0) { %>
+            <% projects.forEach(project => { %>
+                <div 
+                    class="card"
+                    style="
+                        position: relative;
+                        cursor: pointer;
+                        background-image: url('<%= project.hero %>');
+                        background-size: cover;
+                        background-position: center;
+                        height: 64px;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        margin-bottom: 12px;
+                    "
+                    onclick="window.location.href='/view-project/<%= project.slug %>'"
+                >
+                    <!-- Dark overlay -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.35); /* adjust opacity as needed */
+                    "></div>
+
+                    <!-- Text content -->
+                    <h1 style="
+                        position: relative;
+                        margin: 0;
+                        padding-left: 16px;
+                        line-height: 64px;
+                        color: white;
+                        font-size: 2.25rem;
+                        text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+                    ">
+                        <%= project.title %>
+                    </h1>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p style="margin-left: 16px;">No projects found.</p>
+        <% } %>
+
+            
+
+            <br><br>
+            <h1>Blog</h1>
+            <p>I write about building stuff — code experiments, project breakdowns, dev lessons, and tech thoughts. It’s a mix of insights, bugs I've squashed, and dev things I wish someone told me earlier. If you’re a curious coder or just want to see what I’m up to, you’ll find it all in my blog. <br><br>My music blogs are mixed in there as well!</p>
+            <br>
+            <div style="text-align: center;">
+                <a href="/blog"><button>Read the Blog</button></a>
+            </div>
+
+            <br>
+            <% if(blogs && blogs.length > 0) { %>
+                <h2>Recent Posts</h2>
+                <br>
+                <% blogs.forEach(blog => { %>
+                    <div class="card" onclick="location.href='/blog/<%= blog.slug %>'">
+                        <div>
+                            <h2><%= blog.title %></h2>
+                            <small><%= new Date(blog.created_at).toLocaleDateString() %></small>
+                        </div>
+                        <div>
+                            <small>By <b><%= blog.author %></b></small>
+                        </div>
+                    </div>
+                    <br>
+                <% }) %>
+            <% } %>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

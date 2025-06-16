@@ -1,0 +1,25 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <form action="/login" method="POST">
+            <h2>Admin Login</h2>
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required autocomplete="off">
+            <div style="text-align: center;">
+                <button>Login</button>
+            </div>
+        </form>
+
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

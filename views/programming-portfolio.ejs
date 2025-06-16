@@ -1,0 +1,65 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "programming"}) %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">Programming Projects</h1>
+        <br>
+        <br>
+
+        <% if (projects.length > 0) { %>
+            <% projects.forEach(project => { %>
+                <div 
+                    class="card"
+                    style="
+                        position: relative;
+                        cursor: pointer;
+                        background-image: url('<%= project.hero %>');
+                        background-size: cover;
+                        background-position: center;
+                        height: 64px;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        margin-bottom: 12px;
+                    "
+                    onclick="window.location.href='/view-project/<%= project.slug %>'"
+                >
+                    <!-- Dark overlay -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.35); /* adjust opacity as needed */
+                    "></div>
+
+                    <!-- Text content -->
+                    <h1 style="
+                        position: relative;
+                        margin: 0;
+                        padding-left: 16px;
+                        line-height: 64px;
+                        color: white;
+                        font-size: 2.25rem;
+                        text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+                    ">
+                        <%= project.title %>
+                    </h1>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p style="margin-left: 16px;">No projects found.</p>
+        <% } %>
+
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

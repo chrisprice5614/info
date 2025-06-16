@@ -1,0 +1,118 @@
+<html class="home">
+<head>
+<title><%= blog.title %> | Chris Price</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+  <meta name="author" content="<%= blog.author %>" />
+  <meta name="keywords" content="blog, <%= blog.author %>, <%= blog.title.split(' ').join(', ') %>" />
+  <link rel="canonical" href="https://info.chrispricemusic.net/blog/<%= blog.slug %>" />
+
+  <!-- Open Graph (Facebook, LinkedIn) -->
+  <meta property="og:title" content="<%= blog.title %>" />
+  <meta property="og:description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://info.chrispricemusic.net/blog/<%= blog.slug %>" />
+  <meta property="og:image" content="https://info.chrispricemusic.net/img/chris.jpg" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="<%= blog.title %>" />
+  <meta name="twitter:description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+  <meta name="twitter:image" content="https://info.chrispricemusic.net/img/chris.jpg" />
+  <%- include("includes/head") %>
+  <style>
+    .share-icons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .share-icons ion-icon {
+      font-size: 24px;
+      color: #444;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+
+    .share-icons ion-icon:hover {
+      color: #007bff;
+    }
+
+    .blog-meta {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .blog-content {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <%- include("includes/header", { header: "music" }) %>
+  </header>
+
+  <main class="main">
+    <div class="container" style="margin: 16px;">
+      <h1><%= blog.title %></h1>
+      <div class="blog-meta">
+        <p>
+          By <strong><%= blog.author %></strong> — 
+          <%= new Date(blog.created_at).toLocaleDateString("en-US") %>
+        </p>
+      </div>
+
+      <div class="share-icons">
+        <ion-icon name="logo-facebook" onclick="share('facebook')"></ion-icon>
+        <ion-icon name="logo-twitter" onclick="share('twitter')"></ion-icon>
+        <ion-icon name="logo-reddit" onclick="share('reddit')"></ion-icon>
+        <ion-icon name="logo-whatsapp" onclick="share('whatsapp')"></ion-icon>
+        <ion-icon name="copy-outline" onclick="copyLink()"></ion-icon>
+      </div>
+
+      <div class="blog-content">
+        <%- blog.content %>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <%- include("includes/footer") %>
+  </footer>
+
+  <script>
+    function share(platform) {
+      const url = encodeURIComponent(window.location.href);
+      const text = encodeURIComponent("<%= blog.title %>");
+
+      let shareUrl = "#";
+
+      switch (platform) {
+        case "facebook":
+          shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+          break;
+        case "twitter":
+          shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+          break;
+        case "reddit":
+          shareUrl = `https://www.reddit.com/submit?url=${url}&title=${text}`;
+          break;
+        case "whatsapp":
+          shareUrl = `https://api.whatsapp.com/send?text=${text} ${url}`;
+          break;
+      }
+
+      window.open(shareUrl, "_blank");
+    }
+
+    function copyLink() {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => alert("Link copied to clipboard!"))
+        .catch(() => alert("Failed to copy link."));
+    }
+  </script>
+</body>
+</html>

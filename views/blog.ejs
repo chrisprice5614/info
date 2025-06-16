@@ -1,0 +1,43 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <style>
+    .card {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 0 15px rgba(0, 123, 255, 0.6);
+    }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include("includes/header", {header: "music"}) %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">Blog</h1>
+        <br>
+        <% if(blogs.length > 0) { %>
+            <% blogs.forEach(blog => { %>
+                <div class="card" onclick="location.href='/blog/<%= blog.slug %>'">
+                    <div>
+                        <h2><%= blog.title %></h2>
+                        <small><%= new Date(blog.created_at).toLocaleDateString() %></small>
+                    </div>
+                    <div>
+                        <small>By <b><%= blog.author %></b></small>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>
