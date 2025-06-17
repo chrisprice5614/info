@@ -1,6 +1,30 @@
 <html class="home">
 <head>
     <%- include("includes/head") %>
+    <% headUrl = "https://info.chrispricemusic.net/programming"%>
+    <% headName = "Chris Price • Music & Media | Programming" %>
+    <title><%= headName %></title>
+
+    <!-- SEO Meta -->
+    <meta name="description" content="Original music, sound design, and multimedia content by Chris Price. Explore compositions, media projects, and creative collaborations.">
+    <meta name="keywords" content="Chris Price, music composer, media producer, sound designer, audio, original music, film score, video, content creator">
+    <meta name="author" content="Chris Price">
+    
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord) -->
+    <meta property="og:title" content="<%= headName %>">
+    <meta property="og:description" content="Explore the work of Chris Price: composer, sound designer, and media creator. Hear original scores and view featured media projects.">
+    <meta property="og:image" content="https://info.chrispricemusic.net/img/chris.jpg">
+    <meta property="og:url" content="<%= headUrl %>">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= headName %>">
+    <meta name="twitter:description" content="Music and multimedia content by Chris Price. Discover original compositions and sound design projects.">
+    <meta name="twitter:image" content="<%= headUrl %>">
+
+    <link rel="canonical" href="<%= headUrl %>">
     <style>
         .card {
             display: grid;

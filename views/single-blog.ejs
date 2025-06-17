@@ -20,6 +20,35 @@
   <meta name="twitter:title" content="<%= blog.title %>" />
   <meta name="twitter:description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
   <meta name="twitter:image" content="https://info.chrispricemusic.net/img/chris.jpg" />
+
+  <script type="application/ld+json">
+<%- JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": `https://info.chrispricemusic.net/blog/${blog.slug}`
+  },
+  "headline": blog.title,
+  "description": blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) + "...",
+  "image": "https://info.chrispricemusic.net/img/chris.jpg", // Replace with blog-specific image if available
+  "author": {
+    "@type": "Person",
+    "name": blog.author
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Chris Price Music",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://info.chrispricemusic.net/img/chris.jpg"
+    }
+  },
+  "datePublished": new Date(blog.created_at).toISOString(),
+  "dateModified": new Date(blog.updated_at || blog.created_at).toISOString()
+}, null, 2) %>
+</script>
+
   <%- include("includes/head") %>
   <style>
     .share-icons {
