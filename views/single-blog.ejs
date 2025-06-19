@@ -13,13 +13,13 @@
   <meta property="og:description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://info.chrispricemusic.net/blog/<%= blog.slug %>" />
-  <meta property="og:image" content="https://info.chrispricemusic.net/img/chris.jpg" />
+  <meta property="og:image" content="https://info.chrispricemusic.net/<%= blog.hero %>" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="<%= blog.title %>" />
   <meta name="twitter:description" content="<%= blog.content.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
-  <meta name="twitter:image" content="https://info.chrispricemusic.net/img/chris.jpg" />
+  <meta name="twitter:image" content="https://info.chrispricemusic.net/<%= blog.hero %>" />
 
   <script type="application/ld+json">
 <%- JSON.stringify({
