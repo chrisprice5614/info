@@ -25,6 +25,28 @@
     <meta name="twitter:image" content="<%= headUrl %>">
 
     <link rel="canonical" href="<%= headUrl %>">
+
+    <style>
+  .share-icons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: left;
+    align-items: center;
+  }
+
+  .share-icons ion-icon {
+    font-size: 24px;
+    color: #ccc;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .share-icons ion-icon:hover {
+    color: #00ffcc;
+  }
+</style>
+
     <style>
       .event-container {
         max-width: 700px;
@@ -125,6 +147,18 @@
 
         <h1><%= event.title %></h1>
 
+        
+        <div class="share-icons">
+          <small>Share Event</small>
+          <ion-icon name="logo-facebook" onclick="shareEvent('facebook')"></ion-icon>
+          <ion-icon name="logo-twitter" onclick="shareEvent('twitter')"></ion-icon>
+          <ion-icon name="logo-reddit" onclick="shareEvent('reddit')"></ion-icon>
+          <ion-icon name="logo-whatsapp" onclick="shareEvent('whatsapp')"></ion-icon>
+          <ion-icon name="copy-outline" onclick="copyEventLink()"></ion-icon>
+        </div>
+        <br>
+
+
         <% if(event.image) { %>
           <img src="/img/<%= event.image %>" alt="<%= event.title %> image" class="event-image">
         <% } %>
@@ -214,6 +248,39 @@ END:VCALENDAR`;
           const encodedIcs = encodeURIComponent(icsContent);
           const icsHref = `data:text/calendar;charset=utf8,${encodedIcs}`;
         %>
+
+        <script>
+        function shareEvent(platform) {
+          const url = encodeURIComponent(window.location.href);
+          const text = encodeURIComponent("<%= event.title %>");
+
+          let shareUrl = "#";
+
+          switch (platform) {
+            case "facebook":
+              shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+              break;
+            case "twitter":
+              shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+              break;
+            case "reddit":
+              shareUrl = `https://www.reddit.com/submit?url=${url}&title=${text}`;
+              break;
+            case "whatsapp":
+              shareUrl = `https://api.whatsapp.com/send?text=${text} ${url}`;
+              break;
+          }
+
+          window.open(shareUrl, "_blank", "noopener,noreferrer");
+        }
+
+        function copyEventLink() {
+          navigator.clipboard.writeText(window.location.href)
+            .then(() => alert("Event link copied to clipboard!"))
+            .catch(() => alert("Failed to copy link."));
+        }
+      </script>
+
 
         <a href="<%= icsHref %>" download="<%= summary.replace(/\s+/g, '_') %>.ics" class="btn-ical">Add to iCal</a>
 
