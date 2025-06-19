@@ -24,6 +24,15 @@
               value="<%= blog.title.replace(/"/g, '&quot;') %>"
             >
 
+            <!-- Hero Image Upload -->
+            <label for="heroImage">Hero Image</label>
+            <% if (blog.hero) { %>
+                <div style="margin-bottom: 8px;">
+                    <img src="<%= blog.hero %>" alt="Current Hero" style="max-width: 100%; border-radius: 8px;">
+                </div>
+            <% } %>
+            <input type="file" id="heroImage" name="heroImage" accept="image/*">
+
             <label for="markdown">Content</label>
             <textarea 
               id="markdown" 

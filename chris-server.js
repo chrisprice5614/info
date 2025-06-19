@@ -260,7 +260,8 @@ const createTables = db.transaction(() => {
             slug TEXT UNIQUE,
             content TEXT,
             author TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            hero TEXT
         );
         `
     ).run()
@@ -566,7 +567,7 @@ app.get("/edit-project/:id",mustBeLoggedIn, (req,res) => {
     return res.render("edit-project",{project})
 })
 
-app.get("/events", mustBeLoggedIn, (req,res) => {
+app.get("/events", (req,res) => {
 
     const eventStatement = db.prepare("SELECT * FROM events ORDER BY datetime");
     const events = eventStatement.all()
@@ -610,75 +611,83 @@ app.get("/add-blog", mustBeLoggedIn, (req,res) => {
     return res.render("add-blog")
 })
 
-app.post("/add-blog", mustBeLoggedIn, upload.none(), (req, res) => {
+app.post("/add-blog", mustBeLoggedIn, upload.single("heroImage"), fileSizeLimiter, (req, res) => {
   try {
     const title = req.body.title;
     const content = req.body.content;
 
-
-    console.log(title);
-
-    console.log(content);
-
-
-    // Basic validation
     if (!title || !content) {
-      return res.render("edit-blog", { error: "Title and content are required." });
+      return res.render("add-blog", { error: "Title and content are required." });
     }
 
-    // Create slug from title (lowercase, URL-friendly)
     const slug = slugify(title, { lower: true, strict: true });
+    const hero = req.file ? "/img/" + req.file.filename : null;
 
-    // Insert into database (adjust to your db method)
     const statement = db.prepare(`
-    INSERT INTO blogs (title, content, author, slug) 
-    VALUES (?, ?, ?, ?)
+      INSERT INTO blogs (title, content, author, slug, hero)
+      VALUES (?, ?, ?, ?, ?)
     `);
 
-    statement.run(title, content, "Chris Price", slug);
+    statement.run(title, content, "Chris Price", slug, hero);
 
-    // Optionally, you could pass some data to edit-blog here
-    return res.redirect("edit-blog");
-
+    return res.redirect("/edit-blog");
   } catch (err) {
     console.error("Error adding blog:", err);
-    return res.redirect("edit-blog");
+    return res.status(500).render("add-blog", { error: "An error occurred while saving your blog post." });
   }
 });
 
-app.post("/edit-blog/:id", mustBeLoggedIn, upload.none(), (req, res) => {
+
+app.post("/edit-blog/:id", mustBeLoggedIn, upload.single("heroImage"), fileSizeLimiter, (req, res) => {
   try {
-    const { id } = req.params;
+    const blogId = req.params.id;
     const { title, content } = req.body;
 
-    console.log(id);
-    console.log(title);
-    console.log(content);
-
-    // Basic validation
     if (!title || !content) {
-      return res.render("edit-blog", { error: "Title and content are required.", blog: { id, title, content } });
+      return res.render("edit-blog", {
+        blog: { id: blogId, title, content, hero: req.body.currentHero || null },
+        error: "Title and content are required."
+      });
     }
 
-    // Create slug from title (lowercase, URL-friendly)
     const slug = slugify(title, { lower: true, strict: true });
 
-    // Update existing blog post
+    // Fetch current hero from DB
+    const existing = db.prepare("SELECT hero FROM blogs WHERE id = ?").get(blogId);
+    const currentHero = existing?.hero;
+
+    let newHero = currentHero;
+
+    if (req.file) {
+      // Remove old hero if it exists
+      if (currentHero && currentHero.startsWith("/img/")) {
+        const filePath = path.join(__dirname, "public", currentHero);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      newHero = "/img/" + req.file.filename;
+    }
+
     const statement = db.prepare(`
       UPDATE blogs
-      SET title = ?, content = ?, slug = ?
+      SET title = ?, slug = ?, content = ?, hero = ?
       WHERE id = ?
     `);
 
-    statement.run(title, content, slug, id);
+    statement.run(title, slug, content, newHero, blogId);
 
-    return res.redirect(`/edit-blog`);
-
+    return res.redirect("/edit-blog");
   } catch (err) {
     console.error("Error updating blog:", err);
-    return res.render("edit-blog", { error: "Failed to update blog.", blog: { id, title: req.body.title, content: req.body.content } });
+    return res.status(500).render("edit-blog", {
+      blog: { id: req.params.id, title: req.body.title, content: req.body.content, hero: req.body.currentHero || null },
+      error: "An error occurred while updating the blog post."
+    });
   }
 });
+
 
 
 app.get("/edit-blog/:id", mustBeLoggedIn, (req,res) => {

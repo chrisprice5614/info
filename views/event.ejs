@@ -192,7 +192,7 @@
             const hours = pad(date.getUTCHours());
             const mins = pad(date.getUTCMinutes());
             const secs = pad(date.getUTCSeconds());
-            return `${year}${month}${day}T${hours}${mins}${secs}Z`;
+            return `${year}${month}${day}T${hours}${mins}${secs}`;
           }
 
           const dtStart = formatDateICS(eventDate);

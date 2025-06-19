@@ -50,14 +50,21 @@
         <% if(blogs.length > 0) { %>
             <% blogs.forEach(blog => { %>
                 <div class="card" onclick="location.href='/blog/<%= blog.slug %>'">
-                    <div>
-                        <h2><%= blog.title %></h2>
-                        <small><%= new Date(blog.created_at).toLocaleDateString() %></small>
+                            <div>
+                                <div>
+                                    <h2><%= blog.title %></h2>
+                                    <small><%= new Date(blog.created_at).toLocaleDateString() %></small>
+                                </div>
+                                <div>
+                                    <small>By <b><%= blog.author %></b></small>
+                                </div>
+                            </div>
+                            <div>
+                                <div>
+                                    <img src="<%= blog.hero %>" alt="" style="width: 100%; height: 112px; object-fit: cover;">
+                                </div>
+                            </div>
                     </div>
-                    <div>
-                        <small>By <b><%= blog.author %></b></small>
-                    </div>
-                </div>
             <% }) %>
         <% } %>
     </main>
