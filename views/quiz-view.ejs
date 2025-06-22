@@ -1,0 +1,72 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <title><%= quiz.title %> | Chris Price</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta name="author" content="Chris Price" />
+    <meta name="keywords" content="quiz, Chris Price, <%= quiz.title.split(' ').join(', ') %>" />
+    <link rel="canonical" href="https://info.chrispricemusic.net/quiz/<%= quiz.slug %>" />
+
+    <!-- Open Graph (Facebook, LinkedIn) -->
+    <meta property="og:title" content="<%= quiz.title %>" />
+    <meta property="og:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://info.chrispricemusic.net/quiz/<%= quiz.slug %>" />
+    <meta property="og:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= quiz.title %>" />
+    <meta name="twitter:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta name="twitter:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <section style="text-align: center;">
+    <div style="position: relative; background: 
+        linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+        url('<%= quiz.heroImage %>') center/cover no-repeat; 
+        padding: 2rem;">
+        <h1 style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8); margin: 0; color: fff; text-align: center; font-size: 2rem; padding: 24px 0;">
+          <%= quiz.title %>
+        </h1>
+      </div>
+
+    <br>
+    <p style="text-align: left; margin: 16px;"><%= quiz.description %></p>
+    <br>
+
+    <form action="/quiz/<%= quiz.slug %>/submit" method="POST">
+        <% questions.forEach((q, i) => { %>
+        <div style="text-align: left; margin: 1.5rem auto; max-width: 600px;">
+            <h3>Q<%= i + 1 %>: <%= q.text %></h3>
+            <br>
+            <% q.options.forEach(opt => { %>
+            <label style="display: block; margin-left: 1rem; margin: 8px; padding: 0px;">
+                <input type="radio" name="answers[<%= q.id %>]" value="<%= opt.value || opt.id %>" required style="margin: 8px; padding: 0px;">
+                <%= opt.text %>
+                <% console.log('Question ID:', q.id); %>
+            </label>
+            <% }) %>
+        </div>
+        <% }) %>
+
+        <button type="submit" style="margin-top: 2rem;">Submit Answers</button>
+    </form>
+    </section>
+
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

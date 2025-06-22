@@ -1,0 +1,136 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <form action="/add-quiz" method="POST" enctype="multipart/form-data">
+
+        <h2>Create a New Quiz</h2>
+
+        <label for="title">Quiz Title</label><br/>
+        <input type="text" id="title" name="title" required><br/><br/>
+
+        <label for="description">Description</label><br/>
+        <textarea id="description" name="description" rows="3"></textarea><br/><br/>
+
+        <label for="type">Quiz Type</label><br/>
+        <select id="type" name="type" required>
+            <option value="knowledge">Knowledge Quiz</option>
+            <option value="personality">Personality Quiz</option>
+        </select><br/><br/>
+
+        <label for="heroImage">Hero Image Upload</label><br/>
+        <input type="file" id="heroImage" name="heroImage" accept="image/*" required><br/><br/>
+
+        <div id="personality-results-section" style="display: none;">
+            <h3>Personality Result Outcomes</h3>
+            <div id="result-container"></div>
+            <button type="button" id="add-result-btn">Add Result Option</button><br/><br/>
+        </div>
+
+        <div id="questions-container">
+            <h3>Questions</h3>
+            <!-- Questions will be added here -->
+        </div>
+
+        <button type="button" id="add-question-btn">Add Question</button><br/><br/>
+
+        <button type="submit">Create Quiz</button>
+        </form>
+
+        <script>
+        let questionCount = 0;
+
+        document.getElementById('add-question-btn').addEventListener('click', () => {
+            questionCount++;
+
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('question-block');
+            questionDiv.dataset.qIndex = questionCount;
+
+            questionDiv.innerHTML = `
+            <hr>
+            <label>Question ${questionCount} Text</label><br/>
+            <input type="text" name="questions[${questionCount}][text]" required><br/><br/>
+
+            <div class="options-container" data-q-index="${questionCount}">
+                <strong>Options</strong><br/>
+            </div>
+            <button type="button" class="add-option-btn" data-q-index="${questionCount}">Add Option</button><br/><br/>
+            `;
+
+            document.getElementById('questions-container').appendChild(questionDiv);
+        });
+
+        // Delegate event for adding options dynamically
+        document.getElementById('questions-container').addEventListener('click', e => {
+            if (e.target.classList.contains('add-option-btn')) {
+            const qIndex = e.target.dataset.qIndex;
+            const optionsContainer = document.querySelector(`.options-container[data-q-index="${qIndex}"]`);
+            const optionCount = optionsContainer.querySelectorAll('.option-block').length + 1;
+
+            const optionDiv = document.createElement('div');
+            optionDiv.classList.add('option-block');
+
+            optionDiv.innerHTML = `
+                <label>Option ${optionCount} Text</label>
+                <input type="text" name="questions[${qIndex}][options][${optionCount}][text]" required>
+
+                <label>Value (for personality quiz)</label>
+                <input type="text" name="questions[${qIndex}][options][${optionCount}][value]">
+
+                <label>Correct? (for knowledge quiz)</label>
+                <input type="checkbox" name="questions[${qIndex}][options][${optionCount}][is_correct]" value="1">
+                <br/><br/>
+            `;
+
+            optionsContainer.appendChild(optionDiv);
+            }
+        });
+        </script>
+
+        <script>
+        const quizTypeSelect = document.getElementById('type');
+        const resultsSection = document.getElementById('personality-results-section');
+
+        quizTypeSelect.addEventListener('change', () => {
+            resultsSection.style.display = quizTypeSelect.value === 'personality' ? 'block' : 'none';
+        });
+
+        document.getElementById('add-result-btn').addEventListener('click', () => {
+            const container = document.getElementById('result-container');
+            const count = container.children.length + 1;
+
+            const resultDiv = document.createElement('div');
+            resultDiv.innerHTML = `
+            <label>Result Value (e.g. "apple")</label>
+            <input type="text" name="results[${count}][value]" required>
+
+            <label>Description</label>
+            <input type="text" name="results[${count}][description]" required>
+
+            <label>Image</label>
+            <input type="file" name="resultImages[${count}]" accept="image/*" required>
+
+            <br/><br/>
+            `;
+            container.appendChild(resultDiv);
+        });
+        </script>
+
+
+
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

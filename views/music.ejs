@@ -144,6 +144,29 @@
             </div>
             </p>
             <br>
+            <br>
+            <h2>Fun Quizzes!</h2>
+            <br>
+            <% if(quizzes.length > 0) { %>
+                <% quizzes.forEach(quiz => { %>
+                    <div class="card" onclick="location.href='/quiz/<%= quiz.slug %>'">
+                        <div style="display: grid; grid-template-columns: 3fr 1fr; column-gap: 8px;">
+                            <div>
+                                <div>
+                                    <h2><%= quiz.title %></h2>
+                                    <p><%= quiz.description.substring(0, 80) %>...</p>
+                                </div>
+                            </div>
+                            <div>
+                                <div>
+                                    <img src="<%= quiz.heroImage %>" alt="" style="width: 100%; height: 112px; object-fit: cover;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+            <br>
             <h1>Blog</h1>
             <br>
             <p>I write about music, creativity, education, and whatever’s inspiring me at the moment. Sometimes it's deep dives into composition techniques, other times it's stories from the road or thoughts on music education. If you’re curious about how I think — or just want some behind-the-scenes — the blog is where it lives.<br><br>My programming blogs are mixed in there as well!</p>

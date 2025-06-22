@@ -13,6 +13,7 @@ const sharp = require('sharp');
 const fs = require("fs");
 const axios = require("axios");
 const marked = require('marked');
+const session = require('express-session');
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     const mime = file.mimetype;
@@ -277,6 +278,48 @@ const createTables = db.transaction(() => {
         );
         `
     ).run()
+
+    db.prepare(`
+    CREATE TABLE IF NOT EXISTS quizzes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT,
+      slug TEXT,
+      description TEXT,
+      type TEXT,           -- 'knowledge' or 'personality'
+      heroImage TEXT       -- path or URL to hero image for quiz
+    )
+  `).run();
+
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quiz_id INTEGER,
+      text TEXT,
+      FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+    )
+  `).run();
+
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS options (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question_id INTEGER,
+      text TEXT,
+      value TEXT,          -- for personality quiz: category or trait, else NULL
+      is_correct INTEGER DEFAULT 0, -- 1 if correct answer (knowledge quiz), else 0
+      FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+    )
+  `).run();
+
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS personality_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quiz_id INTEGER,
+      value TEXT,          -- category/trait (matches options.value)
+      description TEXT,
+      image TEST,
+      FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+    )
+  `).run();
 })
 
 createTables();
@@ -285,13 +328,18 @@ const app = express()
 app.use(express.json())
 app.set("view engine", "ejs")
 app.set("views", path.join(__dirname, "views"));
-app.use(express.urlencoded({extended: false}))// This makes it so we can easily access requests
 app.use(express.static("public")) //Using public folder
 app.use(cookieParser())
 app.use(express.static('/public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(body_parser.json())
+app.use(session({
+  secret: 'secret-key',
+  resave: false,
+  saveUninitialized: true
+}));
+
 
 
 function getChannelIdentifier(url) {
@@ -340,6 +388,13 @@ function slugify(title) {
     .replace(/^-+|-+$/g, '');       // trim dashes from start/end
 }
 
+app.get("/quizzes", (req,res) => {
+  const getQuizzes = db.prepare("SELECT * FROM quizzes ORDER BY id DESC")
+  const quizzes = getQuizzes.all();
+
+  return res.render("quizzes", {quizzes})
+})
+
 // Adjust this if your DB object uses async/await
 app.post("/add-event", mustBeLoggedIn, upload.single("image"), fileSizeLimiter, async (req, res) => {
     try {
@@ -381,6 +436,254 @@ app.post("/add-event", mustBeLoggedIn, upload.single("image"), fileSizeLimiter, 
     }
 });
 
+app.get("/add-quiz", mustBeLoggedIn, (req,res) => {
+  return res.render("add-quiz")
+})
+
+app.post(
+  '/add-quiz',
+  mustBeLoggedIn,
+  upload.any(),  // accept all files because resultImages are dynamic
+  fileSizeLimiter,
+  (req, res) => {
+    try {
+      const { title, description, type } = req.body;
+
+      // Find heroImage file from uploaded files
+      const heroFile = req.files.find(f => f.fieldname === 'heroImage');
+      const heroImage = heroFile ? '/img/' + heroFile.filename : '';
+
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      // Insert quiz
+      const quizStmt = db.prepare(`
+        INSERT INTO quizzes (title, description, type, heroImage, slug)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      const quizResult = quizStmt.run(title, description, type, heroImage, slug);
+      const quizId = quizResult.lastInsertRowid;
+
+      // Insert questions & options
+      const questions = req.body.questions || {};
+      const insertQuestion = db.prepare(`INSERT INTO questions (quiz_id, text) VALUES (?, ?)`);
+      const insertOption = db.prepare(`
+        INSERT INTO options (question_id, text, value, is_correct)
+        VALUES (?, ?, ?, ?)
+      `);
+
+      for (const qIndex in questions) {
+        const q = questions[qIndex];
+        const qResult = insertQuestion.run(quizId, q.text);
+        const questionId = qResult.lastInsertRowid;
+
+        const options = q.options || {};
+        for (const oIndex in options) {
+          const opt = options[oIndex];
+          insertOption.run(
+            questionId,
+            opt.text || '',
+            opt.value || '',
+            opt.is_correct ? 1 : 0
+          );
+        }
+      }
+
+      // Build map of resultImages keyed by index from dynamic fieldnames like resultImages[1], resultImages[2], ...
+      const resultImagesMap = {};
+      for (const file of req.files) {
+        const match = file.fieldname.match(/^resultImages\[(\d+)\]$/);
+        if (match) {
+          resultImagesMap[match[1]] = file;
+        }
+      }
+
+      // Insert personality results if personality quiz
+      if (type === 'personality' && req.body.results) {
+        const results = req.body.results;
+        const insertResult = db.prepare(`
+          INSERT INTO personality_results (quiz_id, value, description, image)
+          VALUES (?, ?, ?, ?)
+        `);
+
+        for (const rIndex in results) {
+          const resData = results[rIndex];
+          const imageFile = resultImagesMap[rIndex];
+          const imagePath = imageFile ? '/img/' + imageFile.filename : '';
+
+          insertResult.run(
+            quizId,
+            resData.value || '',
+            resData.description || '',
+            imagePath
+          );
+        }
+      }
+
+      res.redirect(`/quiz/${slug}`);
+    } catch (err) {
+      console.error('Error creating quiz:', err);
+      res.status(500).send('Failed to create quiz.');
+    }
+  }
+);
+
+
+
+app.get('/quiz/:slug', (req, res) => {
+  const answers = {};
+
+// Iterate req.body keys:
+for (const key in req.body) {
+  if (key.startsWith('answers_')) {
+    const questionId = key.split('_')[1];
+    answers[questionId] = req.body[key];
+  }
+}
+
+  const { slug } = req.params;
+
+  // Get the quiz by slug
+  const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
+  if (!quiz) return res.status(404).send('Quiz not found');
+
+  // Get all questions for this quiz
+  const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
+
+  // Get all options for all questions
+  const getOptions = db.prepare('SELECT * FROM options WHERE question_id = ?');
+  const questionsWithOptions = questions.map(q => ({
+    ...q,
+    options: getOptions.all(q.id)
+  }));
+
+  // If it's a personality quiz, also get possible outcomes
+  let resultOptions = [];
+  if (quiz.type === 'personality') {
+    resultOptions = db.prepare('SELECT * FROM personality_results WHERE quiz_id = ?').all(quiz.id);
+  }
+
+  // Render the quiz
+  res.render('quiz-view', {
+    quiz,
+    questions: questionsWithOptions,
+    resultOptions
+  });
+});
+
+app.post('/quiz/:slug/submit', (req, res) => {
+  const { slug } = req.params;
+
+console.log('Full req.body:', req.body);
+
+
+  // Fetch quiz
+  const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
+  if (!quiz) return res.status(404).send('Quiz not found');
+
+  // Get all questions for quiz
+  const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
+
+  // Parse answers from form submission
+  const answers = req.body.answers;
+
+  console.log(req.body.answers)
+
+
+  // === KNOWLEDGE QUIZ SCORING ===
+  if (quiz.type === 'knowledge') {
+    let total = questions.length;
+    let correct = 0;
+
+    const correctOptionStmt = db.prepare(`
+      SELECT id FROM options WHERE question_id = ? AND is_correct = 1
+    `);
+
+    let iterator = 0;
+    for (const q of questions) {
+      const questionIdStr = String(q.id);
+      console.log(questionIdStr)
+      const submitted = req.body.answers[iterator];
+
+      const correctOption = correctOptionStmt.get(q.id);
+
+      console.log('Question ID:', q.id);
+      console.log('Submitted Answer:', submitted);
+      console.log('Correct Option ID:', correctOption?.id);
+
+      // Compare submitted option id (converted to Number) with correct option id
+      if (submitted && correctOption && Number(submitted) === correctOption.id) {
+        correct++;
+      }
+
+      iterator++;
+    }
+
+    return res.render('quiz-result', {
+      quiz,
+      type: 'knowledge',
+      score: `${correct} / ${total}`,
+      correct,
+      total
+    });
+  }
+
+  // === PERSONALITY QUIZ SCORING ===
+  else if (quiz.type === 'personality') {
+    const valueCounts = {};
+
+    let iterator = 0;
+    for (const q of questions) {
+      const questionIdStr = String(q.id);
+      const selectedValue = answers[iterator];  // selected option value for personality
+
+      if (selectedValue) {
+        valueCounts[selectedValue] = (valueCounts[selectedValue] || 0) + 1;
+      }
+      iterator++;
+    }
+
+    // Find dominant personality value (most selected)
+    const topValue = Object.entries(valueCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    if (!topValue) {
+      return res.render('quiz-result', {
+        quiz,
+        type: 'personality',
+        score: 0,
+        result: null,
+        error: 'No dominant personality detected. Please complete the quiz.'
+      });
+    }
+
+    const result = db.prepare(`
+      SELECT * FROM personality_results WHERE quiz_id = ? AND value = ?
+    `).get(quiz.id, topValue);
+
+    return res.render('quiz-result', {
+      quiz,
+      type: 'personality',
+      score: 0,
+      result
+    });
+  }
+
+  return res.status(400).send('Unsupported quiz type.');
+});
+
+app.get("/edit-quizzes", mustBeLoggedIn, (req,res) => {
+
+  const quizStatement = db.prepare("SELECT * FROM quizzes");
+  const quizzes = quizStatement.all();
+
+  return res.render("edit-quizzes", {quizzes})
+})
+
+app.get("/delete-quiz/:id", mustBeLoggedIn, (req,res) => {
+  const deleteStatement = db.prepare("DELETE from quizzes WHERE id = ?")
+  deleteStatement.run(req.params.id);
+
+  return res.redirect("/edit-quizzes")
+})
 
 app.post("/edit-event/:id", mustBeLoggedIn, upload.single("image"), fileSizeLimiter, async (req, res) => {
   try {
@@ -726,7 +1029,6 @@ app.get("/blog/:slug", (req,res) => {
 })
 
 app.post("/upload-image", mustBeLoggedIn, upload.single("image"), fileSizeLimiter, (req, res) => {
-    console.log("awe")
   if (!req.file) {
     
     return res.status(400).json({ error: "No file uploaded or invalid file type." });
@@ -946,7 +1248,10 @@ app.get("/music", (req,res) => {
     const blogStatement = db.prepare("SELECT * FROM blogs ORDER BY created_at DESC LIMIT 5")
     const blogs = blogStatement.all();
 
-    return res.render("music",{events, blogs})
+    const quizStatements = db.prepare("SELECT * FROM quizzes ORDER BY id DESC LIMIT 5")
+    const quizzes = quizStatements.all();
+
+    return res.render("music",{events, blogs, quizzes})
 })
 
 app.get("/programming", (req,res) => {

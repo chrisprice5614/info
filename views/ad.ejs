@@ -1,0 +1,55 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <style>
+        #adVideo {
+        max-width: 100%;
+        border: 2px solid #444;
+        margin-bottom: 20px;
+        }
+
+        #ad-container {
+        text-align: center;
+        }
+    </style>
+    
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main" style="text-align: center;">
+        <br>
+        <h2>Please turn off all ad-blockers to continue</h2>
+        <br>
+        <div id="ad-id"></div>
+        <button id="start">Watch ad to Continue</button>
+        <br>
+         </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+    <script type="text/javascript" src="https://cdn.applixir.com/applixir.app.v6.0.1.js"></script>
+</body>
+<script type="text/javascript">
+  const options = {
+    apiKey: "d87b7198-da1e-406d-a50b-d02c99124d5c", // Replace with your actual API key
+    injectionElementId: "ad-id", // This is the ID of the div from step 2.
+    adStatusCallbackFn: (status) => { // This is how you can listen for ad statuses (more in Step 4)
+      console.log("OUTSIDE Ad status: ", status);
+    },
+    adErrorCallbackFn: (error) => { // This is how you can listen for errors (more in Step 4)
+      console.log("Error: ", error.getError().data);
+    },
+  };
+
+  document.getElementById("start").addEventListener("click", () => { // Or use any other event to trigger the player
+    initializeAndOpenPlayer(options);
+  });
+
+</script>
+
+
+</html>
+
