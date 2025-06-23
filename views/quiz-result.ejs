@@ -1,38 +1,41 @@
 <html class="home">
 <head>
     <%- include("includes/head") %>
+    <head>
+      <% if (typeof windowRedirect !== 'undefined' && windowRedirect) { %>
+    <script>
+      // Only redirect visitors (not bots like Facebook or Twitter crawlers)
+      if (!/facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|Discordbot/i.test(navigator.userAgent)) {
+        window.location.href = "/quiz/<%= quiz.slug %>";
+      }
+    </script>
+  <% } %>
     <title><%= quiz.title %> | Chris Price</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
     <meta name="author" content="Chris Price" />
     <meta name="keywords" content="quiz, Chris Price, <%= quiz.title.split(' ').join(', ') %>" />
-    <link rel="canonical" href="https://info.chrispricemusic.net/quiz/<%= quiz.slug %>" />
 
-    <!-- Open Graph (Facebook, LinkedIn) -->
+    <% const resultUrl = `https://info.chrispricemusic.net/quiz/${quiz.slug}/result/${typeof score === 'string' ? score.replace(/\s+/g, '-').replace(/\//g, '-') : (result?.value || 'none')}`; %>
+
+    <!-- Canonical -->
+    <link rel="canonical" href="<%= resultUrl %>" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="<%= quiz.title %>" />
-    <meta property="og:description" content="<%= type === 'personality' && result ? 'You are: ' + result.value + ' — ' + result.description.slice(0, 100) : 'Score: ' + score %>" />
+    <meta property="og:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://info.chrispricemusic.net/quiz/<%= quiz.slug %>" />
-    <% if (type === 'knowledge') { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
-    <% } else if (type === 'personality' && result && result.image) { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= result.image %>" />
-    <% } else { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
-    <% } %>
+    <meta property="og:url" content="<%= resultUrl %>" />
+    <meta property="og:image" content="https://info.chrispricemusic.net/<%= result?.image || quiz.heroImage %>" />
 
-    <!-- Twitter Card -->
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="<%= quiz.title %>" />
-    <meta name="twitter:description" content="<%= type === 'personality' && result ? 'You are: ' + result.value + ' — ' + result.description.slice(0, 100) : 'Score: ' + score %>" />
-    <% if (type === 'knowledge') { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
-    <% } else if (type === 'personality' && result && result.image) { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= result.image %>" />
-    <% } else { %>
-    <meta property="og:image" content="https://info.chrispricemusic.net/<%= quiz.heroImage %>" />
-    <% } %>
+    <meta name="twitter:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta name="twitter:image" content="https://info.chrispricemusic.net/<%= result?.image || quiz.heroImage %>" />
+  </head>
+
 
     <style>
     .share-icons {
@@ -111,15 +114,15 @@
 </body>
 
 <script>
-  const quizTitle = "<%= quiz.title.replace(/"/g, '\\"') %>";
   const quizSlug = "<%= quiz.slug %>";
+  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}`;
+
   const resultText = `<% if (type === 'personality' && result) { %>
     I got "<%= result.value %>" on "<%= quiz.title %>": <%= result.description.replace(/"/g, '\\"') %>
   <% } else if (type === 'knowledge') { %>
     I scored <%= score %> on "<%= quiz.title %>"
   <% } %>`.replace(/\s+/g, ' ').trim();
 
-  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}`;
   const shareMessage = `${resultText}\n\nTake the quiz: ${quizUrl}`;
 
   function share(platform) {
@@ -148,14 +151,15 @@
   function copyLink() {
     navigator.clipboard.writeText(shareMessage)
       .then(() => {
-        document.getElementById('copyStatus').textContent = 'Link copied!';
+        alert('Link copied!');
       })
       .catch(err => {
-        document.getElementById('copyStatus').textContent = 'Failed to copy.';
+        alert('Failed to copy link.');
         console.error(err);
       });
   }
 </script>
+
 
 
 </html>

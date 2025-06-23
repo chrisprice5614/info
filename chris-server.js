@@ -573,83 +573,86 @@ for (const key in req.body) {
 app.post('/quiz/:slug/submit', (req, res) => {
   const { slug } = req.params;
 
-console.log('Full req.body:', req.body);
-
-
   // Fetch quiz
   const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
   if (!quiz) return res.status(404).send('Quiz not found');
 
-  // Get all questions for quiz
   const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
-
-  // Parse answers from form submission
   const answers = req.body.answers;
 
-  console.log(req.body.answers)
-
-
-  // === KNOWLEDGE QUIZ SCORING ===
   if (quiz.type === 'knowledge') {
-    let total = questions.length;
     let correct = 0;
-
     const correctOptionStmt = db.prepare(`
       SELECT id FROM options WHERE question_id = ? AND is_correct = 1
     `);
 
     let iterator = 0;
     for (const q of questions) {
-      const questionIdStr = String(q.id);
-      console.log(questionIdStr)
-      const submitted = req.body.answers[iterator];
-
+      const submitted = answers[iterator];
       const correctOption = correctOptionStmt.get(q.id);
-
-      console.log('Question ID:', q.id);
-      console.log('Submitted Answer:', submitted);
-      console.log('Correct Option ID:', correctOption?.id);
-
-      // Compare submitted option id (converted to Number) with correct option id
       if (submitted && correctOption && Number(submitted) === correctOption.id) {
         correct++;
       }
-
       iterator++;
     }
 
-    return res.render('quiz-result', {
-      quiz,
-      type: 'knowledge',
-      score: `${correct} / ${total}`,
-      correct,
-      total
-    });
+    const scoreString = `${correct}-${questions.length}`; // e.g., "3-5"
+    return res.redirect(`/quiz/${slug}/result/${scoreString}?from=submit`);
   }
 
-  // === PERSONALITY QUIZ SCORING ===
   else if (quiz.type === 'personality') {
     const valueCounts = {};
-
     let iterator = 0;
-    for (const q of questions) {
-      const questionIdStr = String(q.id);
-      const selectedValue = answers[iterator];  // selected option value for personality
 
+    for (const q of questions) {
+      const selectedValue = answers[iterator];
       if (selectedValue) {
         valueCounts[selectedValue] = (valueCounts[selectedValue] || 0) + 1;
       }
       iterator++;
     }
 
-    // Find dominant personality value (most selected)
     const topValue = Object.entries(valueCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-
     if (!topValue) {
+      return res.redirect(`/quiz/${slug}/result/none?from=submit`);
+    }
+
+    return res.redirect(`/quiz/${slug}/result/${topValue}?from=submit`);
+  }
+
+  return res.status(400).send('Unsupported quiz type.');
+});
+
+app.get('/quiz/:slug/result/:variable', (req, res) => {
+  const showResult = req.query.from === 'submit';
+  const { slug, variable } = req.params;
+
+  const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
+  if (!quiz) return res.status(404).send('Quiz not found');
+
+  const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
+
+  if (quiz.type === 'knowledge') {
+    const [correct, total] = variable.split('-').map(Number);
+
+    return res.render('quiz-result', {
+      quiz,
+      type: 'knowledge',
+      result: '',
+      windowRedirect: !showResult,
+      score: `${correct} / ${total}`,
+      correct,
+      total
+    });
+  }
+
+  else if (quiz.type === 'personality') {
+    if (variable === 'none') {
       return res.render('quiz-result', {
         quiz,
         type: 'personality',
         score: 0,
+        windowRedirect: !showResult,
         result: null,
         error: 'No dominant personality detected. Please complete the quiz.'
       });
@@ -657,10 +660,11 @@ console.log('Full req.body:', req.body);
 
     const result = db.prepare(`
       SELECT * FROM personality_results WHERE quiz_id = ? AND value = ?
-    `).get(quiz.id, topValue);
+    `).get(quiz.id, variable);
 
     return res.render('quiz-result', {
       quiz,
+      windowRedirect: !showResult,
       type: 'personality',
       score: 0,
       result
@@ -669,6 +673,7 @@ console.log('Full req.body:', req.body);
 
   return res.status(400).send('Unsupported quiz type.');
 });
+
 
 app.get("/edit-quizzes", mustBeLoggedIn, (req,res) => {
 
