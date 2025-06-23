@@ -544,7 +544,7 @@ for (const key in req.body) {
 
   // Get the quiz by slug
   const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
-  if (!quiz) return res.status(404).send('Quiz not found');
+  if (!quiz) return res.redirect("/404");
 
   // Get all questions for this quiz
   const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
@@ -575,7 +575,7 @@ app.post('/quiz/:slug/submit', (req, res) => {
 
   // Fetch quiz
   const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
-  if (!quiz) return res.status(404).send('Quiz not found');
+  if (!quiz) return res.redirect("/404");
 
   const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
   const answers = req.body.answers;
@@ -628,7 +628,7 @@ app.get('/quiz/:slug/result/:variable', (req, res) => {
   const { slug, variable } = req.params;
 
   const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
-  if (!quiz) return res.status(404).send('Quiz not found');
+  if (!quiz) return res.redirect("/404");
 
   const questions = db.prepare('SELECT * FROM questions WHERE quiz_id = ?').all(quiz.id);
 
@@ -698,7 +698,7 @@ app.post("/edit-event/:id", mustBeLoggedIn, upload.single("image"), fileSizeLimi
     // Get the existing event to check the old image filename
     const event = db.prepare("SELECT * FROM events WHERE id = ?").get(eventId);
     if (!event) {
-      return res.status(404).send("Event not found");
+      return res.redirect("/404").send("Event not found");
     }
 
     let webpImageFilename = event.image; // default to old image
@@ -1394,7 +1394,7 @@ app.get("/youtube", async (req,res) => {
 })
 
 app.use((req, res) => {
-    res.status(404).render('404');
+    res.redirect("/404").render('404');
 });
 
 app.listen(3009)
