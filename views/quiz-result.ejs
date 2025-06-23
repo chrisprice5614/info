@@ -10,10 +10,22 @@
       }
     </script>
   <% } %>
-    <title><%= quiz.title %> | Chris Price</title>
+  <%
+    let headTitle;
+    if (type === 'knowledge') {
+      headTitle = `I scored ${score} | ${quiz.title} | Chris Price`;
+    } else if (type === 'personality' && result) {
+      headTitle = `I got "${result.value}" | ${quiz.title} | Chris Price`;
+    } else {
+      headTitle = `${quiz.title} | Chris Price`;
+    }
+  %>
+    <title>
+    <%= headTitle %>
+  </title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta name="description" content="<%= quiz.title %>" />
     <meta name="author" content="Chris Price" />
     <meta name="keywords" content="quiz, Chris Price, <%= quiz.title.split(' ').join(', ') %>" />
 
@@ -23,16 +35,16 @@
     <link rel="canonical" href="<%= resultUrl %>" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="<%= quiz.title %>" />
-    <meta property="og:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta property="og:title" content="<%= headTitle %>" />
+    <meta property="og:description" content="<%= quiz.title %>" />
     <meta property="og:type" content="article" />
     <meta property="og:url" content="<%= resultUrl %>" />
     <meta property="og:image" content="https://info.chrispricemusic.net/<%= result?.image || quiz.heroImage %>" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="<%= quiz.title %>" />
-    <meta name="twitter:description" content="<%= quiz.description.replace(/(<([^>]+)>)/gi, '').slice(0, 150) %>..." />
+    <meta name="twitter:title" content="<%= headTitle %>" />
+    <meta name="twitter:description" content="<%= quiz.title %>" />
     <meta name="twitter:image" content="https://info.chrispricemusic.net/<%= result?.image || quiz.heroImage %>" />
   </head>
 
@@ -115,7 +127,7 @@
 
 <script>
   const quizSlug = "<%= quiz.slug %>";
-  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}`;
+  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}/result/${typeof score === 'string' ? score.replace(/\s+/g, '-').replace(/\//g, '-') : (result?.value || 'none')}`;
 
   const resultText = `<% if (type === 'personality' && result) { %>
     I got "<%= result.value %>" on "<%= quiz.title %>": <%= result.description.replace(/"/g, '\\"') %>
