@@ -127,7 +127,8 @@
 
 <script>
   const quizSlug = "<%= quiz.slug %>";
-  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}/result/${typeof score === 'string' ? score.replace(/\s+/g, '-').replace(/\//g, '-') : (result?.value || 'none')}`;
+  const resultPath = "<%= type === 'knowledge' ? score.replace(/\s+/g, '-').replace(/\//g, '-') : (result?.value || 'none') %>";
+  const quizUrl = `https://info.chrispricemusic.net/quiz/${quizSlug}/result/${resultPath}`;
 
   const resultText = `<% if (type === 'personality' && result) { %>
     I got "<%= result.value %>" on "<%= quiz.title %>": <%= result.description.replace(/"/g, '\\"') %>
@@ -161,7 +162,7 @@
   }
 
   function copyLink() {
-    navigator.clipboard.writeText(shareMessage)
+    navigator.clipboard.writeText(quizUrl)
       .then(() => {
         alert('Link copied!');
       })
@@ -171,6 +172,7 @@
       });
   }
 </script>
+
 
 
 
