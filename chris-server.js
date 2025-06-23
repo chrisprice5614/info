@@ -617,7 +617,7 @@ app.post('/quiz/:slug/submit', (req, res) => {
       return res.redirect(`/quiz/${slug}/result/none?from=submit`);
     }
 
-    return res.redirect(`/quiz/${slug}/result/${topValue}?from=submit`);
+    return res.redirect(`/quiz/${slug}/result/${encodeURIComponent(topValue)}?from=submit`);
   }
 
   return res.status(400).send('Unsupported quiz type.');
@@ -625,7 +625,8 @@ app.post('/quiz/:slug/submit', (req, res) => {
 
 app.get('/quiz/:slug/result/:variable', (req, res) => {
   const showResult = req.query.from === 'submit';
-  const { slug, variable } = req.params;
+  const { slug } = req.params;
+  const variable = decodeURIComponent(req.params.variable); // <- this line is key
 
   const quiz = db.prepare('SELECT * FROM quizzes WHERE slug = ?').get(slug);
   if (!quiz) return res.redirect("/404");
@@ -646,7 +647,7 @@ app.get('/quiz/:slug/result/:variable', (req, res) => {
     });
   }
 
-  else if (quiz.type === 'personality') {
+  if (quiz.type === 'personality') {
     if (variable === 'none') {
       return res.render('quiz-result', {
         quiz,
