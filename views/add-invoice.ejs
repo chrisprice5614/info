@@ -1,0 +1,158 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">
+            Add Invoice
+        </h1>
+        <br>
+        <form id="invoice-form" action="/create-invoice" method="POST">
+            <h1>Create Invoice</h1>
+
+            <!-- CLIENT DROPDOWN -->
+            <label for="client">Select Client:</label>
+            <select id="client" name="client_id">
+                <% clients.forEach(c => { %>
+                    <option value="<%= c.id %>"><%= c.firstname %> <%= c.lastname %></option>
+                <% }) %>
+            </select>
+
+
+            <!-- DATES -->
+            <label for="issue_date">Issue Date:</label>
+            <input type="date" name="issue_date" required />
+
+            <label for="due_date">Due Date:</label>
+            <input type="date" name="due_date" required />
+
+            <!-- INVOICE ITEMS -->
+            <h3>Items</h3>
+            <table id="items-table">
+                <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="items-body">
+                <!-- JS will add rows here -->
+                </tbody>
+            </table>
+            <button type="button" onclick="addItemRow()">Add Item</button>
+
+            <!-- TAX AND TOTAL -->
+            <label for="tax">Tax %:</label>
+            <input type="number" name="tax_rate" id="tax" value="10" min="0" step="0.01" />
+
+            <div id="totals">
+                <p>Subtotal: $<span id="subtotal">0.00</span></p>
+                <p>Tax: $<span id="tax-amount">0.00</span></p>
+                <p><strong>Total: $<span id="total">0.00</span></strong></p>
+            </div>
+
+            <label for="notes">Notes:</label>
+            <textarea name="notes" id="notes" rows="3"></textarea>
+
+            <input type="hidden" name="items_json" id="items-json" />
+            <input type="hidden" name="subtotal" id="subtotal-input" />
+            <input type="hidden" name="tax" id="tax-input" />
+            <input type="hidden" name="total" id="total-input" />
+
+            <button type="submit">Create Invoice</button>
+        </form>
+
+
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+    <script>
+  function addItemRow() {
+    const tbody = document.getElementById('items-body');
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+      <td><input type="text" class="desc" required /></td>
+      <td><input type="number" class="qty" value="1" min="1" required /></td>
+      <td><input type="number" class="unit-price" value="0.00" step="0.01" required /></td>
+      <td class="item-total">$0.00</td>
+      <td><button type="button" onclick="removeRow(this)">X</button></td>
+    `;
+
+    tbody.appendChild(row);
+    bindInputEvents();
+  }
+
+  function removeRow(btn) {
+    btn.closest('tr').remove();
+    calculateTotals();
+  }
+
+  function bindInputEvents() {
+    document.querySelectorAll('.qty, .unit-price').forEach(input => {
+      input.oninput = calculateTotals;
+    });
+  }
+
+  function calculateTotals() {
+    let subtotal = 0;
+    const rows = document.querySelectorAll('#items-body tr');
+
+    rows.forEach(row => {
+      const qty = parseFloat(row.querySelector('.qty').value) || 0;
+      const price = parseFloat(row.querySelector('.unit-price').value) || 0;
+      const total = qty * price;
+      row.querySelector('.item-total').textContent = `$${total.toFixed(2)}`;
+      subtotal += total;
+    });
+
+    const taxRate = parseFloat(document.getElementById('tax').value) || 0;
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal + taxAmount;
+
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('tax-amount').textContent = taxAmount.toFixed(2);
+    document.getElementById('total').textContent = total.toFixed(2);
+
+    // Also update hidden inputs for form submission
+    document.getElementById('subtotal-input').value = Math.round(subtotal * 100); // in cents
+    document.getElementById('tax-input').value = Math.round(taxAmount * 100);
+    document.getElementById('total-input').value = Math.round(total * 100);
+  }
+
+  document.getElementById('invoice-form').addEventListener('submit', (e) => {
+    const items = [];
+    const rows = document.querySelectorAll('#items-body tr');
+
+    rows.forEach(row => {
+      const description = row.querySelector('.desc').value;
+      const quantity = parseInt(row.querySelector('.qty').value);
+      const unit_price = parseFloat(row.querySelector('.unit-price').value);
+      const total = quantity * unit_price;
+
+      items.push({
+        description,
+        quantity,
+        unit_price: Math.round(unit_price * 100),
+        total: Math.round(total * 100)
+      });
+    });
+
+    document.getElementById('items-json').value = JSON.stringify(items);
+  });
+
+  // Initial row
+  addItemRow();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,52 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <br>
+        <h1 style="text-align: center;">Edit Invoices/Clients</h1>
+        <br>
+        <div class="duple-to-single">
+            <div style="text-align: center;">
+                <a href="/add-client"><button>Add New Client</button></a>
+                <br>
+                <% if(clients.length > 0) { %>
+                    <% clients.forEach(client => { %>
+                        <div class="card" style="text-align: left;">
+                            <h2><%= client.firstname %> <%= client.lastname %></h2>
+                            <p><%= client.phone %> | <%= client.email %></p>
+                            <p><%= client.address %></p>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+            <div style="text-align: center;">
+                <a href="/add-invoice"><button>Add New Invoice</button></a>
+                <br>
+                <% if(invoices.length > 0) { %>
+                    <% invoices.forEach(invoice => { %>
+                        <a href="/invoice/<%= invoice.id %>" style="text-decoration: none;">
+                            <div class="card" style="text-align: left;">
+                                <h2><%= invoice.invoice_number %></h2>
+                                <p><%= invoice.clientName %></p>
+                                <p>Total: <%= (invoice.total / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %></p>
+                                <p>Due Date: <%= new Date(invoice.due_date).toLocaleDateString('en-US', {year: 'numeric',month: 'short',day: 'numeric'}) %></p>
+                                <p><% if(invoice.status == "paid") {%> <span style="color: rgb(20,255,20)">Paid</span> <% } else { %> <span style="color: rgb(255,20,20)">Not Paid</span> <% } %></p>
+                            </div>
+                        </a>
+                    <% }) %>
+                <% } %>
+            </div>
+        </div>
+        <br>
+        
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+</html>

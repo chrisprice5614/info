@@ -1,0 +1,166 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div id="invoice" style="width: 100%; background: white; margin: auto;" number="<%= invoice.invoice_number %>">
+            <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <h1 style="font-size: 4rem;"><b>Invoice</b></h1>
+                    </div>
+                    <div style="text-align: right;">
+                        <h2>Chris Price Music</h2>
+                        <p>2211 N Hamilton St</p>
+                        <small>Spokane, WA 99207</small><br>
+                        <small>APT. B</small>
+                    </div>
+                </div>
+                <br>
+                <div style="display: grid; grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <h2>Bill To</h2>
+                        <p><%= thisClient.firstname %> <%= thisClient.lastname %></p>
+                        <p><%= thisClient.phone %> • <%= thisClient.email %></p>
+                        <p><%= thisClient.address %></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <h3><b>Invoice #</b><%= invoice.invoice_number %></h3>
+                        <h3><b>Date Issued</b> <%= new Date(invoice.issue_date).toLocaleDateString('en-US', {year: 'numeric',month: 'short',day: 'numeric'}) %></h3>
+                        <h3><b>Date Due</b> <%= new Date(invoice.due_date).toLocaleDateString('en-US', {year: 'numeric',month: 'short',day: 'numeric'}) %></h3>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <h2><b>Amount Due </b><%= (invoice.total / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %></h2>
+                <br>
+                <hr>
+                <div style="padding: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; text-align: center;">
+                        <div>
+                            <b>Quantity</b>
+                        </div>
+                        <div>
+                            <b>Description</b>
+                        </div>
+                        <div>
+                            <b>Cost</b>
+                        </div>
+                    </div>
+                </div>
+                <% items.forEach(item => { %>
+                    <div style="padding: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; text-align: center;">
+                            <div>
+                                <%= item.quantity %>
+                            </div>
+                            <div style="text-align: left;">
+                                <%= item.description %>
+                            </div>
+                            <div>
+                                <%= (item.unit_price / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+                <hr>
+                <br>
+                <div style="text-align: right;">
+                    <p><b>Subtotal</b> <%= (invoice.subtotal / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %></p>
+                    <p>+<b>Tax</b> <%= (invoice.tax / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %></p>
+                    <br>
+                    <p><b>Total</b> <%= (invoice.total / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) %></p>
+                </div>
+                <br>
+                <div style="padding: 24px; text-align: left;">
+                    Payment can be made by check, Venmo, or PayPal. For checks, please make payment to <b>Chris Price</b>. For Venmo, please make payment to chrisprice5614, verification phone number ends in 3735. For PayPal, please make payment to chrisprice5614@gmail.com
+                </div>
+                <br>
+                <div style="text-align: center;">
+                    Thank you for your business!
+                </div>
+                <br>
+                <br>
+                <div style="text-align: center;">
+                    <small><i>info.chrispricemusic.net</i></small>
+                </div>
+                
+            </div>
+        </div>
+        <br>
+        <div style="text-align: center;">
+            <button id="download-pdf">Save as PDF</button>
+            <br>
+            <br>
+            <% if(invoice.status != "paid") { %>
+                <a href="/set-paid/<%= invoice.id %>"><button>Set as Paid</button></a>
+            <% } %>
+        </div>
+        <br>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+    document.getElementById("download-pdf").addEventListener("click", async () => {
+        const { jsPDF } = window.jspdf;
+        const invoice = document.getElementById("invoice");
+
+        const canvas = await html2canvas(invoice, {
+        scale: 2,
+        useCORS: true
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+
+        // PDF dimensions
+        const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4' // or 'letter'
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const imgProps = {
+        width: canvas.width,
+        height: canvas.height
+        };
+
+        // Convert pixels to mm (1px = 0.264583 mm)
+        const pxToMm = px => px * 0.264583;
+        const imgWidthMm = pxToMm(imgProps.width);
+        const imgHeightMm = pxToMm(imgProps.height);
+
+        // Scale image to fit PDF width, preserving aspect ratio
+        const ratio = pageWidth / imgWidthMm;
+        const pdfImgWidth = pageWidth;
+        const pdfImgHeight = imgHeightMm * ratio;
+
+        // If the image is taller than one page, we can paginate (optional)
+        if (pdfImgHeight > pageHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfImgWidth, pdfImgHeight);
+        } else {
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfImgWidth, pdfImgHeight);
+        }
+
+        const invoiceNumber = invoice.getAttribute("number") || "invoice";
+        pdf.save(`${invoiceNumber}.pdf`);
+    });
+    </script>
+
+
+</body>
+
+
+
+</html>
+

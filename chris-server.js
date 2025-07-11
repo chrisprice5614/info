@@ -290,6 +290,47 @@ const createTables = db.transaction(() => {
     )
   `).run();
 
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS clients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      firstname TEXT,
+      lastname TEXT,
+      email TEXT,
+      phone TEXT,
+      address TEXT
+      )
+    `).run();
+
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_number TEXT,
+      client_id INTEGER,
+      issue_date INTEGER,
+      due_date INTEGER,
+      status TEXT,
+      subtotal INTEGER,
+      tax INTEGER,
+      total INTEGER,
+      notes TEXT,
+      created_at INTEGER,
+      updated_at INTEGER,
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+      )
+    `).run();
+
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS invoice_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      invoice_id INTEGER,
+      description STRING,
+      quantity INTEGER,
+      unit_price INTEGER,
+      total INTEGER,
+      FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+      )
+    `).run();
+
   db.prepare(`
     CREATE TABLE IF NOT EXISTS questions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1150,6 +1191,150 @@ app.post("/commission", async (req, res) => {
   }
 });
 
+app.get("/set-paid/:id", mustBeLoggedIn, (req,res) => {
+  const updateStatement = db.prepare("UPDATE invoices SET status = ? WHERE id = ?")
+  updateStatement.run("paid", req.params.id)
+
+  return res.redirect(`/invoice/${req.params.id}`)
+})
+
+app.get("/edit-invoices", mustBeLoggedIn, (req,res) => {
+  const invoiceStatement = db.prepare("SELECT * FROM invoices")
+  const invoices = invoiceStatement.all();
+
+  invoices.forEach(invoice => {
+    const thisClientStatement = db.prepare("SELECT * FROM clients WHERE id = ?")
+    const thisClient = thisClientStatement.get(invoice.client_id);
+    invoice.clientName = thisClient.firstname + " " + thisClient.lastname;
+  })
+
+  const clientStatement = db.prepare("SELECT * FROM clients")
+  const clients = clientStatement.all();
+
+  return res.render("edit-invoices",{invoices,clients})
+})
+
+app.get("/add-client", mustBeLoggedIn, (req,res) => {
+  return res.render("add-client")
+})
+
+app.post("/add-client", mustBeLoggedIn, (req,res) => {
+
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+  const email = req.body.email;
+  const phone = req.body.phone;
+  const address = req.body.address;
+
+  const clientAddStatement = db.prepare("INSERT INTO clients (firstname, lastname, email, phone, address) VALUES (? , ? , ? , ? , ?)")
+  clientAddStatement.run(firstname, lastname, email, phone, address);
+
+  return res.redirect("/edit-invoices")
+})
+
+app.get("/add-invoice", mustBeLoggedIn, (req,res) => {
+  const clients = db.prepare('SELECT id, firstname, lastname FROM clients').all();
+  return res.render("add-invoice", {clients})
+})
+
+app.post('/create-invoice', mustBeLoggedIn, (req, res) => {
+  try {
+    const {
+      client_id,
+      issue_date,
+      due_date,
+      notes,
+      subtotal,
+      tax,
+      total,
+      items_json
+    } = req.body;
+
+    // Validate required fields (basic)
+    if (!client_id || !issue_date || !due_date || !items_json) {
+      console.log("missing fields.");
+      return res.status(400).send('Missing required fields');
+    }
+
+    const items = JSON.parse(items_json);
+
+    const invoiceCount = db.prepare(`SELECT COUNT(*) AS count FROM invoices`).get().count;
+    const nextNumber = invoiceCount + 1;
+    const paddedNumber = String(nextNumber).padStart(6, '0');
+    const invoice_number = `INV_${paddedNumber}`;
+
+    // Use transaction to ensure consistency
+    const insertInvoice = db.prepare(`
+      INSERT INTO invoices
+      (client_id, issue_date, due_date, status, subtotal, tax, total, notes, created_at, updated_at, invoice_number)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)
+    `);
+
+    const insertItem = db.prepare(`
+      INSERT INTO invoice_items
+      (invoice_id, description, quantity, unit_price, total)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    const now = Date.now();
+
+    const status = 'sent'; // or 'sent' depending on your workflow
+
+    const result = db.transaction(() => {
+      // Insert invoice
+      const info = insertInvoice.run(
+        client_id,
+        new Date(issue_date).getTime(),
+        new Date(due_date).getTime(),
+        status,
+        parseInt(subtotal),
+        parseInt(tax),
+        parseInt(total),
+        notes || '',
+        now,
+        now,
+        invoice_number
+      );
+
+      const invoice_id = info.lastInsertRowid;
+
+      // Insert items
+      for (const item of items) {
+        insertItem.run(
+          invoice_id,
+          item.description,
+          item.quantity,
+          item.unit_price,
+          item.total
+        );
+      }
+
+      return invoice_id;
+    })();
+
+    // Redirect to invoice view page
+    res.redirect(`/invoice/${result}`);
+
+  } catch (err) {
+    console.log('Error creating invoice:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get("/invoice/:id", mustBeLoggedIn, (req,res) => {
+  const invoiceStatement = db.prepare("SELECT * FROM invoices WHERE id = ?")
+  const invoice = invoiceStatement.get(req.params.id);
+
+  const itemStatement = db.prepare("SELECT * FROM invoice_items WHERE invoice_id = ?")
+  const items = itemStatement.all(req.params.id)
+
+  const clientStatement = db.prepare("SELECT * FROM clients WHERE id = ?")
+  const thisClient = clientStatement.get(invoice.client_id)
+
+  return res.render("view-invoice", {invoice, items, thisClient})
+})
+
+
 
 app.get("/commission", (req,res) => {
     return res.render("commission")
@@ -1395,7 +1580,7 @@ app.get("/youtube", async (req,res) => {
 })
 
 app.use((req, res) => {
-    res.redirect("/404").render('404');
+    res.status(404).render('404');
 });
 
 app.listen(3009)
