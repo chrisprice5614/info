@@ -489,9 +489,19 @@ form button:hover {
   font-family: 'Gesta', sans-serif;
 }
 
+.duple-to-single{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+
 @media (max-width: 600px) {
   .long-img-wrapper {
     width: 95%;
+  }
+
+  .duple-to-single{
+    grid-template-columns: 1fr;
   }
 }
 
