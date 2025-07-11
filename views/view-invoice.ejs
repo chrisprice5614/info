@@ -53,7 +53,7 @@
                     </div>
                 </div>
                 <% items.forEach(item => { %>
-                    <div style="padding: 12px;">
+                    <div style="padding: 12px;" class="item-row">
                         <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; text-align: center;">
                             <div>
                                 <%= item.quantity %>
@@ -93,7 +93,7 @@
         </div>
         <br>
         <div style="text-align: center;">
-            <button id="download-pdf">Save as PDF</button>
+            <button onclick="printInvoice()">Print / Save PDF</button>
             <br>
             <br>
             <% if(invoice.status != "paid") { %>
@@ -105,57 +105,69 @@
     <footer>
         <%- include("includes/footer") %>
     </footer>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <script>
-    document.getElementById("download-pdf").addEventListener("click", async () => {
-        const { jsPDF } = window.jspdf;
-        const invoice = document.getElementById("invoice");
 
-        const canvas = await html2canvas(invoice, {
-        scale: 2,
-        useCORS: true
-        });
 
-        const imgData = canvas.toDataURL("image/png");
+    
+<script>
+  function printInvoice() {
+    const invoice = document.getElementById("invoice").cloneNode(true);
+    const w = window.open('', '_blank');
 
-        // PDF dimensions
-        const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4' // or 'letter'
-        });
+    // Path to your stylesheet
+    const stylesheetHref = "/styles.css";
 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+    w.document.write(`
+      <html>
+        <head>
+          <title>Invoice</title>
+          <link rel="stylesheet" href="${stylesheetHref}" />
+          <link rel="stylesheet" href="https://use.typekit.net/jpv1ohv.css">
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet">
+          <style>
+            @media print {
+              @page {
+                margin: 0;
+              }
+              body {
+                margin: 0;
+              }
+              /* Remove print footer (URL, date, page #s) in most browsers */
+              html, body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              /* Force full-page background */
+              body {
+                background: white !important;
+              }
+              /* Optional: remove any unwanted elements by class/id */
+              .print-hidden {
+                display: none !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${invoice.outerHTML}
+        </body>
+      </html>
+    `);
 
-        const imgProps = {
-        width: canvas.width,
-        height: canvas.height
-        };
+    w.document.close();
+    w.focus();
 
-        // Convert pixels to mm (1px = 0.264583 mm)
-        const pxToMm = px => px * 0.264583;
-        const imgWidthMm = pxToMm(imgProps.width);
-        const imgHeightMm = pxToMm(imgProps.height);
+    // Wait for styles and images to load before printing
+    w.onload = () => {
+      w.print();
+      w.close();
+    };
+  }
+</script>
 
-        // Scale image to fit PDF width, preserving aspect ratio
-        const ratio = pageWidth / imgWidthMm;
-        const pdfImgWidth = pageWidth;
-        const pdfImgHeight = imgHeightMm * ratio;
 
-        // If the image is taller than one page, we can paginate (optional)
-        if (pdfImgHeight > pageHeight) {
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfImgWidth, pdfImgHeight);
-        } else {
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfImgWidth, pdfImgHeight);
-        }
 
-        const invoiceNumber = invoice.getAttribute("number") || "invoice";
-        pdf.save(`${invoiceNumber}.pdf`);
-    });
-    </script>
 
 
 </body>
