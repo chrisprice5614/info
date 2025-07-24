@@ -1,0 +1,51 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 8px">
+            <br>
+            <h1>Order No <%= order.id %> for <%= order.name %></h1>
+            <h2>Address: <span style="color: rgb(53, 160, 160); cursor: pointer;" onclick="navigator.clipboard.writeText('<%= order.shipping_address %>').then(() => alert('Copied to clipboard'))"><%= order.shipping_address %></span></h2>
+            <p>Created on: <%= new Date(order.created_at).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></p>
+            <p>Total items: <%= orderItems.length %></p>
+            
+            <br>
+            <% orderItems.forEach(item => { %>
+                <div class="card">
+                    <h2><%= item.name %></h2>
+                    <p>Size: <%= item.size %></p>
+                    <p>Description: <%= item.description %></p>
+                </div>
+            <% }) %>
+            <br>
+            <form action="/update-order/<%= order.id %>" method="POST">
+                <label for="tracking">Tracking Number</label>
+                <input type="text" name="tracking" autocapitalize="off" autocomplete="off" autocorrect="off" required value="<%= order.description %>">
+                <br>
+                <label for="status">Update Status</label>
+                    <select name="status" id="status">
+                        <option value="Placed" <%= order.status === 'Placed' ? 'selected' : '' %>>Placed</option>
+                        <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                        <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                        <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                    </select>
+                <br>
+                <div style="text-align: center;">
+                    <button>Update</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>

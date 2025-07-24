@@ -1,0 +1,45 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div >
+            <br>
+            <h1 style="text-align: center;">Edit Merch</h1>
+            <br>
+            <div style="text-align: center;">
+                <a href="/view-orders"><button>Orders</button></a>
+            </div>
+            <br>
+            <div style="text-align: center;">
+                <a href="/add-product"><button>Add Product</button></a>
+            </div>
+            <br>
+            <div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr;">
+                    <% products.forEach(product => { %>
+                        <div class="product-card" onclick="window.location='/edit-merch/<%= product.id %>'">
+                            <div class="product-img-wrapper">
+                                <img src="<%= product.image_url %>" alt="Image for <%= product.name %>">
+                            </div>
+                            <h2><b <% if(!product.active) { %> style="color: red;" <% } %>><%= product.name %></b></h2>
+                            <p><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price) %></p>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

@@ -1,3 +1,11 @@
+<div id="popup">
+  <div class="popup-card">
+    <p id="popup-text">Added to cart!</p>
+    <button id="popup-close">Close</button>
+    <button onclick="window.location='/cart'">View Cart</button>
+  </div>
+</div>
+
 <div class="main-header">
     <% if(user) { %>
         <div style="text-align: center;">
@@ -9,9 +17,23 @@
             <a href="/edit-programming">Programming</a>
             <a href="/edit-quizzes">Quiz</a>
             <a href="/edit-invoices">Invoices</a>
+            <a href="/edit-merch">Merch</a>
         </div>
         <br>
     <% } %>
+    <div style="
+    position: fixed;
+    top: 2px;
+    left: 2px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    ">
+        <a href="/cart" style="font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <ion-icon name="cart-outline"></ion-icon> <span id="cart-number"><%= cart.length %></span>
+        </a>
+    </div>
+
     <div style="text-align: center;">
         <a href="/">
             <img src="/img/chris.jpg" alt="Chris Price at his piano" style="width: 196px; height: 196px; border-radius: 50%; border: solid 3px #fff;">
@@ -19,6 +41,17 @@
     </div>
     <h1 style="text-align: center;"><i>Chris Price • Music & Media</i></h1>
     <p style="text-align: center;">Composer • Arranger • Programmer</p>
+    <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        margin: 12px 0;
+        ">
+        <a href="/merch" style="font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <ion-icon name="bag-outline"></ion-icon> Merch Store
+        </a>
+    </div>
     <div style="text-align: center; padding-top: 16px; font-size: x-large;">
         <a href="/youtube"><ion-icon name="logo-youtube"></ion-icon></a>
         <a href="https://www.linkedin.com/in/ceprice/" target="_blank"><ion-icon name="logo-linkedin"></ion-icon></a>

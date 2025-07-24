@@ -1,0 +1,79 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <title><%= product.name %></title>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 8px">
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr;">
+                <div>
+                    <img src="<%= product.image_url %>" alt="Image cover for <%= product.name %>" style="width: 90%; margin-left: 5%">
+                </div>
+                <div>
+                    <br>
+                    <h1 style="text-align: center;"><%= product.name %></h1>
+                    <p style="text-align: center;"><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price) %></p>
+                    <br>
+                    <p><%= product.description %></p>
+                </div>
+            </div>
+            <br>
+            <form action="/add-to-cart" method="POST" id="add-to-cart-form">
+                <input type="hidden" name="product_id" value="<%= product.id %>">
+                <% if(product.catagory == "shirt") { %>
+                    <label for="size">Size</label>
+                    <select name="size" id="size">
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M" selected>M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                        <option value="XXXL">XXXL</option>
+                    </select>
+                <% } %>
+                <br>
+                <label for="quantity">Quantity</label>
+                <input type="number" name="quantity" min="1" max="99" step="1" value="1" required>
+                <div style="text-align: center;">
+                    <button>Add to Cart</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+    <script>
+        document.getElementById('add-to-cart-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const params = new URLSearchParams(new FormData(form));
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            showPopup(data.message);
+
+            document.getElementById("cart-number").textContent = data.cartLength
+
+
+        } else {
+            showPopup("Something went wrong!");
+        }
+        });
+        </script>
+</body>
+
+
+
+</html>
+

@@ -1,0 +1,65 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <title>Your Cart</title>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 8px">
+            <br>
+            <h1 style="text-align: center;">Your Cart</h1>
+            <% runningSub = 0; runningTotal = 0; totalItems = 0;%>
+            <% if(cart.length > 0) { %>
+                <% cart.forEach(product => { %>
+                    <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; margin: 12px 0;">
+                        <div>
+                            <img src="<%= product.image_url %>" alt="Image for <%= product.name %>" style="width: 100%; height: auto; border-radius: 8px;">
+                        </div>
+                        <div style="padding: 8px;">
+                            <p><% if(product.catagory == "shirt") { %> <b>Size: </b><%= product.size %> <% } %></p>
+                            <p><%= product.description %></p>
+                        </div>
+                        <div style="padding: 8px;">
+                            <p><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price) %></p>
+                            <% runningSub += product.price; runningTotal += Math.ceil((product.price * 100)*1.09)/100; totalItems++; %>
+                            <br>
+                            <div style="text-align: center;">
+                                <a href="/remove-item/<%= product.id %>" style="text-decoration: none; color: red; font-size: xx-large;">X</a>
+                            </div>
+                            
+                        </div>
+                    </div>
+                <% }) %>
+                <br>
+                <div style="text-align: right; padding: 32px;">
+                    <p><b>Total Items:</b> <%= totalItems %></p>
+                    <p><b>Subtotal: </b><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningSub) %></p>
+                    <p><b>Shipping & Handling:</b> $7.99 <% runningTotal +=  Math.ceil((7.99 * 100)*1.09)/100;%></p>
+                    <p><b>+Tax</b> <%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal-runningSub) %> (9%)</p>
+                    <p><b>Total: </b><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal) %></p>
+                </div>
+                <br>
+                <div style="text-align: center;">
+                    <button onclick="window.location='/checkout'">Checkout</button>
+                </div>
+            <% } else { %>
+                <p style="text-align: center;">Your cart is empty...</p>
+                <br>
+                <div style="text-align: center;">
+                    <button onclick="window.location='/merch'">Take Me to the Store!</button>
+                </div>
+            <% } %>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

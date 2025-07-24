@@ -13,7 +13,10 @@ const sharp = require('sharp');
 const fs = require("fs");
 const axios = require("axios");
 const marked = require('marked');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const { v4: uuidv4 } = require('uuid');
 const session = require('express-session');
+const { match } = require("assert")
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     const mime = file.mimetype;
@@ -268,6 +271,27 @@ const createTables = db.transaction(() => {
     ).run()
 
     db.prepare(
+      `
+      CREATE TABLE IF NOT EXISTS carts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT,           -- UUID stored in a cookie
+        created_at INTEGER
+      );
+      `
+    ).run()
+
+    db.prepare(
+      `
+      CREATE TABLE IF NOT EXISTS cart_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cart_id INTEGER,
+        size TEXT,
+        product_id INTEGER
+      );
+      `
+    ).run();
+
+    db.prepare(
         `
         CREATE TABLE IF NOT EXISTS programming (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -275,6 +299,69 @@ const createTables = db.transaction(() => {
             slug TEXT UNIQUE,
             content TEXT,
             hero TEXT
+        );
+        `
+    ).run()
+
+    db.prepare(
+        `
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            slug TEXT UNIQUE,
+            description TEXT,
+            image_url TEXT,
+            price INTEGER,
+            catagory STRING,
+            active BOOLEAN DEFAULT 1,
+            created_at INTEGER
+        );
+        `
+    ).run()
+
+    db.prepare(
+        `
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            status TEXT,
+            name TEXT,
+            session_id TEXT,
+            description TEXT,
+            total_price INTEGER,
+            subtotal_price INTEGER,
+            created_at INTEGER,
+            shipping_address STRING
+        );
+        `
+    ).run()
+
+    db.prepare(
+        `
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER,
+            product_id INTEGER,
+            price INTEGER,
+            size TEXT,
+            subtotal INTEGER,
+            FOREIGN KEY (order_id) REFERENCES orders(id),
+            FOREIGN KEY (product_id) REFERENCES products(id)
+        );
+        `
+    ).run()
+
+    db.prepare(
+        `
+        CREATE TABLE IF NOT EXISTS shipments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER,
+            tracking_number INTEGER,
+            carrier TEXT,
+            shipped_at INTEGER,
+            delivered_at INTEGER,
+            status TEXT,
+            FOREIGN KEY (order_id) REFERENCES orders(id)
         );
         `
     ).run()
@@ -398,6 +485,27 @@ function getChannelIdentifier(url) {
 
 app.use(function (req, res, next) {
 
+    if (!req.cookies.session_id) {
+      const sessionId = uuidv4();
+      res.cookie('session_id', sessionId, {
+        httpOnly: true,
+        sameSite: 'Lax',
+        maxAge: 1000 * 60 * 60 * 24 * 30 // 30 days
+      });
+      req.session_id = sessionId;
+    } else {
+      req.session_id = req.cookies.session_id;
+    }
+
+    const cart = db.prepare("SELECT id FROM carts WHERE session_id = ?").get(req.session_id);
+
+    if(!cart)
+      res.locals.cart = [];
+    else
+      {
+        res.locals.cart = db.prepare("SELECT * FROM cart_items WHERE cart_id = ?").all(cart.id)
+      }
+
     try {
         const decoded = jwt.verify(req.cookies.chris, process.env.JWTSECRET)
         req.user = decoded
@@ -476,6 +584,68 @@ app.post("/add-event", mustBeLoggedIn, upload.single("image"), fileSizeLimiter, 
         res.status(500).send("Failed to add event.");
     }
 });
+
+app.post("/add-to-cart", async (req,res) => {
+  console.log(req.body)
+
+  const productId = Number(req.body.product_id);
+  const size = req.body.size || "M";
+  const quantity = Number(req.body.quantity) || 1;
+  const sessionId = req.session_id;
+
+  console.log(sessionId)
+
+  const cartCheck = db.prepare("SELECT * FROM carts WHERE session_id = ?").get(sessionId);
+
+  if(!cartCheck)
+    db.prepare("INSERT INTO carts (session_id) VALUES (?)").run(sessionId);
+
+  const cart = db.prepare("SELECT * FROM carts WHERE session_id = ?").get(sessionId)
+
+  for(let i = 0; i < quantity; i++){
+    db.prepare("INSERT INTO cart_items (cart_id, size, product_id) VALUES (?,?,?)").run(cart.id, size, productId)
+  }
+
+  const getCartLength = db.prepare('SELECT COUNT(*) AS total FROM cart_items WHERE cart_id = ?');
+  const result = getCartLength.get(cart.id);
+  const cartLength = result.total || 0;
+
+  res.status(200).json({ message: 'Added to cart!', cartLength });
+})
+
+app.get("/cart", (req,res) => {
+
+  res.locals.cart.forEach(product => {
+    const matchedProduct = db.prepare("SELECT * FROM products WHERE id = ?").get(product.product_id)
+    product.name = matchedProduct.name;
+    product.description = matchedProduct.description;
+    product.image_url = matchedProduct.image_url;
+    product.price = matchedProduct.price;
+    product.catagory = matchedProduct.catagory;
+  })
+
+  res.render("cart")
+})
+
+app.get("/remove-item/:id", (req,res) => {
+
+  const itemInQuestion = db.prepare("SELECT cart_id FROM cart_items WHERE id = ?").get(req.params.id)
+
+  if(!itemInQuestion)
+    return res.redirect("/cart")
+
+  const cartInQuestion = db.prepare("SELECT session_id FROM carts WHERE id = ?").get(itemInQuestion.cart_id)
+
+  if(!cartInQuestion)
+    return res.redirect("/cart")
+
+  if(cartInQuestion.session_id != req.session_id)
+    return res.redirect("/cart")
+
+  db.prepare("DELETE FROM cart_items WHERE id = ?").run(req.params.id)
+
+  return res.redirect("/cart");
+})
 
 app.get("/add-quiz", mustBeLoggedIn, (req,res) => {
   return res.render("add-quiz")
@@ -812,6 +982,43 @@ app.post("/add-music", mustBeLoggedIn, upload.single("link"), fileSizeLimiter, (
   }
 });
 
+app.get("/merch-active/:id", mustBeLoggedIn, (req,res) => {
+  const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id)
+
+  if(!product)
+    return res.redirect("/edit-merch")
+
+  db.prepare("UPDATE products SET active = 1 WHERE id = ?").run(req.params.id)
+
+  return res.redirect("/edit-merch")
+})
+
+app.get("/merch-inactive/:id", mustBeLoggedIn, (req,res) => {
+  const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id)
+
+  if(!product)
+    return res.redirect("/edit-merch")
+
+  db.prepare("UPDATE products SET active = 0 WHERE id = ?").run(req.params.id)
+
+  return res.redirect("/edit-merch")
+})
+
+app.get("/merch", (req,res) => {
+  const products = db.prepare("SELECT * FROM products WHERE active = 1").all();
+  return res.render("merch", {products})
+})
+
+app.get("/product/:slug", (req,res) => {
+  const product = db.prepare("SELECT * FROM products WHERE slug = ?").get(req.params.slug)
+
+  if(!product)
+    return res.redirect("/merch")
+
+  return res.render("product", {product})
+})
+
+
 app.post("/add-project", mustBeLoggedIn, upload.single("heroImage"), fileSizeLimiter, (req, res) => {
   try {
     const title = req.body.title;
@@ -984,6 +1191,134 @@ app.post("/add-blog", mustBeLoggedIn, upload.single("heroImage"), fileSizeLimite
   } catch (err) {
     console.error("Error adding blog:", err);
     return res.status(500).render("add-blog", { error: "An error occurred while saving your blog post." });
+  }
+});
+
+app.get("/edit-merch", mustBeLoggedIn, (req,res) => {
+  const products = db.prepare("SELECT * FROM products").all()
+  return res.render("edit-merch", {products})
+})
+
+app.get("/add-product", mustBeLoggedIn, (req,res) => {
+  return res.render("add-product")
+})
+
+app.post('/add-product', mustBeLoggedIn, upload.single('image'), fileSizeLimiter, (req, res) => {
+  try {
+    const { file } = req;
+    const { name, description, price, catagory } = req.body;
+
+    if (!file) {
+      return res.status(400).send("No image uploaded.");
+    }
+
+    if (!name || !description || !price || !catagory) {
+      return res.status(400).send("Missing required fields.");
+    }
+
+    const image_url = `/img/${file.filename}`;
+    const slug = slugify(name);
+    const created_at = Date.now();
+
+    db.prepare(`
+      INSERT INTO products (name, slug, description, image_url, price, catagory, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(name, slug, description, image_url, parseFloat(price), catagory, created_at);
+
+    res.redirect('/edit-merch');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error.");
+  }
+});
+
+app.get("/view-orders", mustBeLoggedIn, (req,res) => {
+  const orders = db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all();
+
+  return res.render("view-orders", {orders})
+})
+
+app.get("/order/:id", mustBeLoggedIn, (req,res) => {
+  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id)
+
+  if(!order)
+    return res.redirect("/view-orders")
+
+  const orderItems = db.prepare("SELECT * FROM order_items WHERE order_id = ?").all(order.id)
+
+  orderItems.forEach(item => {
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(item.product_id);
+    item.name = product.name;
+    item.description = product.description;
+  })
+
+  return res.render("order", {order, orderItems})
+})
+
+app.post("/update-order/:id",mustBeLoggedIn, (req,res) => {
+  const status = req.body.status;
+
+  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id)
+
+  if(!order)
+    return res.redirect("/view-orders")
+
+  db.prepare("UPDATE orders SET status = ?, description = ? WHERE id = ?").run(status,req.body.tracking, order.id)
+
+  if(status == "Shipped"){
+    sendEmail(order.email,"Your Order Is Shipped!",`<p>Hello, ${order.name},</p><br><br><p>Your order has been shipped to ${order.shipping_address} with a tracking number of ${req.body.tracking}</p>`)
+  }
+
+  if(status == "Delivered"){
+    sendEmail(order.email,"Your Order Is Delivered!",`<p>Hello, ${order.name},</p><br><br><p>Your order has been delivered to ${order.shipping_address} with a tracking number of ${req.body.tracking}</p>`)
+  }
+
+  return res.redirect(`/order/${order.id}`)
+})
+
+app.get("/edit-merch/:id", mustBeLoggedIn, (req,res) => {
+  const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id)
+
+  if(!product)
+    return res.redirect("/edit-merch")
+
+  return res.render("edit-product", {product})
+})
+
+app.post('/edit-product/:id', mustBeLoggedIn, upload.single('image'), fileSizeLimiter, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, catagory } = req.body;
+    const file = req.file;
+
+    // Get current product to retrieve old image filename
+    const product = db.prepare(`SELECT * FROM products WHERE id = ?`).get(id);
+    if (!product) {
+      return res.status(404).send('Product not found');
+    }
+
+    let image_url = product.image_url;
+
+    if (file) {
+      // New image uploaded: delete old one
+      const oldImagePath = path.join(__dirname, 'public', product.image_url);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+
+      image_url = `/img/${file.filename}`;
+    }
+
+    db.prepare(`
+      UPDATE products
+      SET name = ?, description = ?, price = ?, catagory = ?, image_url = ?
+      WHERE id = ?
+    `).run(name, description, price, catagory, image_url, id);
+
+    res.redirect('/edit-merch');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
   }
 });
 
@@ -1532,6 +1867,253 @@ app.post("/login", (req,res) => {
 app.get("/logout", (req,res) => {
     res.clearCookie("chris")
     res.redirect("/")
+})
+
+app.get("/checkout", (req,res) => {
+
+  res.locals.cart.forEach(product => {
+    const matchedProduct = db.prepare("SELECT * FROM products WHERE id = ?").get(product.product_id)
+    product.name = matchedProduct.name;
+    product.description = matchedProduct.description;
+    product.image_url = matchedProduct.image_url;
+    product.price = matchedProduct.price;
+    product.catagory = matchedProduct.catagory;
+  })
+
+  return res.render("Checkout")
+})
+
+app.post('/create-checkout-session', async (req, res) => {
+  try {
+    const sessionId = req.session_id;
+
+    // Get the cart based on session_id
+    const cart = db.prepare('SELECT * FROM carts WHERE session_id = ?').get(sessionId);
+    if (!cart) return res.status(400).json({ error: 'Cart not found' });
+
+    const cartItems = db.prepare(`
+      SELECT ci.*, p.name, p.price
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.id
+      WHERE ci.cart_id = ?
+    `).all(cart.id);
+
+    if (cartItems.length === 0) return res.status(400).json({ error: 'Cart is empty' });
+
+    // Build Stripe line items
+    const line_items = cartItems.map(item => {
+      const price = Math.ceil((item.price * 100) * 1.09); // Add 9% tax, convert to cents and round up
+      return {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `${item.name} - ${item.size}`,
+          },
+          unit_amount: price
+        },
+        quantity: 1
+      };
+    });
+
+    const shippingHandling = Math.ceil((7.99 * 100) * 1.09); // $7.99 + 9% tax, converted to cents
+
+    line_items.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Shipping & Handling',
+        },
+        unit_amount: shippingHandling
+      },
+      quantity: 1
+    });
+
+    // Create Stripe Checkout session
+    const stripeSession = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items,
+      success_url: `${process.env.BASE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.BASE_URL}/cancel`,
+      shipping_address_collection: {
+        allowed_countries: ['US'] // or ['US', 'CA'] etc.
+      },
+      metadata: {
+        session_id: sessionId
+      }
+    });
+
+    res.status(200).json({ url: stripeSession.url });
+  } catch (err) {
+    console.error('Stripe session creation failed:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post("/webhook", body_parser.raw({ type: "application/json" }), (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET; // You'll get this from the dashboard
+
+  console.log("GOt something")
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.log("Webhook signature verification failed.", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case "checkout.session.completed":
+      const session = event.data.object;
+      // Fulfill the order here (update DB, send email, etc.)
+      console.log("✅ Payment received!", session);
+      break;
+    // Add more cases as needed
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  res.sendStatus(200);
+});
+
+app.get('/success', async (req, res) => {
+  const sessionId = req.query.session_id;
+
+  if (!sessionId) {
+    return res.status(400).send('Missing session ID');
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status !== 'paid') {
+      return res.send('Payment not completed.');
+    }
+
+    // Optionally: get customer details
+    const customerEmail = session.customer_details.email;
+    const customerAddress = session.customer_details.address;
+    const customerName = session.customer_details.name;
+    const totalPrice = session.amount_total / 100;
+
+    const customerAddressString = [
+      customerAddress.line1,
+      customerAddress.line2,
+      customerAddress.city,
+      customerAddress.state,
+      customerAddress.postal_code,
+      customerAddress.country
+    ].filter(Boolean).join(', ');
+
+
+    res.locals.cart.forEach(product => {
+      const matchedProduct = db.prepare("SELECT * FROM products WHERE id = ?").get(product.product_id)
+      product.name = matchedProduct.name;
+      product.description = matchedProduct.description;
+      product.image_url = matchedProduct.image_url;
+      product.price = matchedProduct.price;
+      product.catagory = matchedProduct.catagory;
+    })
+
+    if(!db.prepare("SELECT id FROM orders WHERE session_id =?").get(sessionId)){
+      const createdAt = Date.now(); // Or new Date().getTime()
+
+    
+
+    db.prepare(`
+      INSERT INTO orders (
+        email, status, name, session_id, total_price, created_at, shipping_address
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      customerEmail,
+      "Placed",
+      customerName,
+      sessionId,
+      totalPrice,
+      createdAt,
+      customerAddressString
+    );
+
+      const order = db.prepare("SELECT * FROM orders WHERE session_id = ?").get(sessionId)
+
+      res.locals.cart.forEach(product => {
+        db.prepare("INSERT INTO order_items (order_id, product_id, size) VALUES (?,?,?)").run(order.id, product.product_id,product.size)
+      })
+
+    }
+
+    let runningSub = 0;
+    let runningTotal = 0;
+    let totalItems = 0;
+
+    let html = `
+    <h1>Your Order Has Been Placed!</h1>
+    <br>
+    <p>Order for ${customerName}</p>
+    <br>
+    <p>Address: ${customerAddressString}</p>
+    <br>
+    `
+
+    res.locals.cart.forEach(product => {
+      html += `<p>${product.name}`;
+      if(product.catagory=="shirt"){
+        html += ` - ${product.size} `
+      }
+      html += ` - ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price)}</p>`
+      runningSub+=product.price;
+      runningTotal += Math.ceil((product.price * 100)*1.09)/100;
+      totalItems++;
+      html += `<br>`
+    })
+
+    html += `<p><b>Total Items:</b> ${totalItems}</p><br>`
+    html += `<p><b>Subtotal:</b> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningSub)}</p><br>`
+    html += `<p><b>Shipping & Handling:</b> $7.99</p>`;
+    runningTotal +=  Math.ceil((7.99 * 100)*1.09)/100;
+    html += `<p><b>+Tax:</b> ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal - runningSub)} (9%)</p><br>`
+    html += `<p><b>Total: </b>${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal)}</p>`
+
+    // TODO: Mark order as paid in your DB if you haven’t done so in webhook
+    sendEmail(customerEmail,"Your Order Has Been Placed!", html)
+
+    sendEmail("chrisprice5614@gmail.com","You've received a new order!","Go check the new order!")
+
+    res.redirect('/success-screen');
+  } catch (err) {
+    console.error('Error retrieving Stripe session:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get("/success-screen", (req,res) => {
+
+  const cart = db.prepare("SELECT id FROM carts WHERE session_id = ?").get(req.session_id)
+
+  if(cart)
+  {
+    db.prepare("DELETE FROM cart_items WHERE cart_id = ?").run(cart.id)
+    db.prepare("DELETE FROM carts WHERE id = ?").run(cart.id)
+  }
+
+  res.locals.cart = [];
+  return res.render("success")
+})
+
+app.get("/delete-invoice/:id",mustBeLoggedIn,(req,res) => {
+  const invoice = db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.id);
+
+  if(!invoice)
+    return res.redirect("/edit-invoices")
+
+  db.prepare("DELETE FROM invoice_items WHERE invoice_id = ?").run(req.params.id)
+  db.prepare("DELETE FROM invoices WHERE id = ?").run(req.params.id)
+
+  return res.redirect("/edit-invoices")
 })
 
 app.get("/youtube", async (req,res) => {

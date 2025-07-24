@@ -1,0 +1,55 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 12px;">
+            <form action="/add-product" method="POST" enctype="multipart/form-data">
+                <label for="name">Product Name</label>
+                <input type="text" name="name" required autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Chris Price Music Shirt">
+                <br>
+                <label for="description">Description</label>
+                <textarea name="description" id="description" required placeholder="Cool shirt"></textarea>
+                <br>
+                <label for="image">Upload Image</label>
+                <input type="file" name="image" required accept="image/*">
+                <br>
+                <label for="price">Price</label>
+                <input type="number" name="price" step="0.01" min="0" required placeholder="$25.00">
+                <br>
+                <label for="catagory">Product Type:</label>
+                <select name="catagory" id="catagory" required>
+                    <option value="shirt">Shirt</option>
+                    <option value="sweater">Sweater</option>
+                    <option value="hoodie">Hoodie</option>
+                    <option value="hat">Hat</option>
+                    <option value="beanie">Beanie</option>
+                    <option value="jacket">Jacket</option>
+                    <option value="mug">Mug</option>
+                    <option value="sticker">Sticker</option>
+                    <option value="poster">Poster</option>
+                    <option value="bag">Bag</option>
+                    <option value="phone_case">Phone Case</option>
+                    <option value="keychain">Keychain</option>
+                    <option value="other">Other</option>
+                </select>
+
+                <div style="text-align: center;">
+                    <button>Add Product</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

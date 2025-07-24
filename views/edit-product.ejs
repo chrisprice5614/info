@@ -1,0 +1,63 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 12px;">
+            <form action="/edit-product/<%= product.id %>" method="POST" enctype="multipart/form-data">
+                <label for="name">Product Name</label>
+                <input type="text" name="name" required autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Chris Price Music Shirt" value="<%= product.name %>">
+                <br>
+                <label for="description">Description</label>
+                <textarea name="description" id="description" required placeholder="Cool shirt"><%= product.description %></textarea>
+                <br>
+                <label for="image">Upload Image</label>
+                <input type="file" name="image" accept="image/*">
+                <br>
+                <label for="price">Price</label>
+                <input type="number" name="price" step="0.01" min="0" required placeholder="$25.00" value="<%= product.price %>">
+                <br>
+                <label for="catagory">Product Type:</label>
+                <select name="catagory" id="catagory" required>
+                    <option value="shirt" <%= product.catagory === 'shirt' ? 'selected' : '' %>>Shirt</option>
+                    <option value="sweater" <%= product.catagory === 'sweater' ? 'selected' : '' %>>Sweater</option>
+                    <option value="hoodie" <%= product.catagory === 'hoodie' ? 'selected' : '' %>>Hoodie</option>
+                    <option value="hat" <%= product.catagory === 'hat' ? 'selected' : '' %>>Hat</option>
+                    <option value="beanie" <%= product.catagory === 'beanie' ? 'selected' : '' %>>Beanie</option>
+                    <option value="jacket" <%= product.catagory === 'jacket' ? 'selected' : '' %>>Jacket</option>
+                    <option value="mug" <%= product.catagory === 'mug' ? 'selected' : '' %>>Mug</option>
+                    <option value="sticker" <%= product.catagory === 'sticker' ? 'selected' : '' %>>Sticker</option>
+                    <option value="poster" <%= product.catagory === 'poster' ? 'selected' : '' %>>Poster</option>
+                    <option value="bag" <%= product.catagory === 'bag' ? 'selected' : '' %>>Bag</option>
+                    <option value="phone_case" <%= product.catagory === 'phone_case' ? 'selected' : '' %>>Phone Case</option>
+                    <option value="keychain" <%= product.catagory === 'keychain' ? 'selected' : '' %>>Keychain</option>
+                    <option value="other" <%= product.catagory === 'other' ? 'selected' : '' %>>Other</option>
+                </select>
+
+                <div style="text-align: center;">
+                    <button>Edit Product</button>
+                </div>
+            </form>
+            <br>
+            <div style="text-align: center;">
+                <% if(product.active) { %>
+                    <button onclick="window.location='/merch-inactive/<%= product.id %>'">Set Inactive</button>
+                <% } else { %>
+                    <button onclick="window.location='/merch-active/<%= product.id %>'">Set Active</button>
+                <% } %>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+</body>
+
+
+
+</html>
+

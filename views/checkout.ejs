@@ -1,0 +1,78 @@
+<html class="home">
+<head>
+    <%- include("includes/head") %>
+    <title>Checkout</title>
+</head>
+<body>
+    <header>
+        <%- include("includes/header") %>
+    </header>
+    <main class="main">
+        <div style="padding: 8px">
+            <br>
+            <h1 style="text-align: center;">Checkout</h1>
+            <% runningSub = 0; runningTotal = 0; totalItems = 0;%>
+            <% if(cart.length > 0) { %>
+                <% cart.forEach(product => { %>
+                    <% runningSub += product.price; runningTotal += Math.ceil((product.price * 100)*1.09)/100; totalItems++; %>
+                <% }) %>
+                <br>
+                <div style="text-align: left; padding: 32px;">
+                    <p><b>Total Items:</b> <%= totalItems %></p>
+                    <p><b>Subtotal: </b><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningSub) %></p>
+                    <p><b>Shipping & Handling:</b> $7.99 <% runningTotal +=  Math.ceil((7.99 * 100)*1.09)/100;%></p>
+                    <p><b>+Tax</b> <%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal-runningSub) %> (9%)</p>
+                    <p><b>Total: </b><%= new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(runningTotal) %></p>
+                </div>
+                <br>
+                <form action="/create-checkout-session" method="POST" id="checkout-form">
+
+                    <div style="text-align: center;">
+                        <button>Proceed to Payment</button>
+                    </div>
+
+                </form>
+            <% } else { %>
+                <p style="text-align: center;">Your cart is empty...</p>
+                <br>
+                <div style="text-align: center;">
+                    <button onclick="window.location='/merch'">Take Me to the Store!</button>
+                </div>
+            <% } %>
+        </div>
+    </main>
+    <footer>
+        <%- include("includes/footer") %>
+    </footer>
+    <script>
+        const form = document.getElementById('checkout-form');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
+
+  const response = await fetch('/create-checkout-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  const result = await response.json();
+
+  if (result.url) {
+    window.location.href = result.url; // ✅ Redirect to Stripe Checkout
+  } else {
+    alert('Something went wrong. Please try again.');
+  }
+});
+    </script>
+</body>
+
+
+
+</html>
+
